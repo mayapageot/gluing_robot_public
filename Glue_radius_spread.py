@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import cbook, cm
+from matplotlib.colors import LightSource
 #path = r"C:\GluingRobotData\Data_gluing\23_12_14\192.168.200.2\SD2\cv-x\result\SD1_007\231214_143555.txt"
 path = input("path")
 data = np.loadtxt(path, delimiter=',')
