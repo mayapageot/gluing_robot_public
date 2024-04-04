@@ -51,6 +51,7 @@ def get_header(dots_number):
 def get_commend(commend_file_path):
     df = pd.read_excel(commend_file_path,header=None)
     commend = (df.values).T
+    print(commend)
     return commend[:,1:3]
 
 
@@ -69,9 +70,10 @@ def get_XY_camera_mean(file_path):
 
 
 def get_new_commend(XY, commend, commend_file_path, save_name ='/corrected_commend.xlsx'):
+    mask = np.logical_not(np.any(XY==0, axis=1))
     dXY_commend_camera = -(XY_goal_alignment-XY)*pixel_to_mm
-    print(dXY_commend_camera)
-    new_commend = commend + dXY_commend_camera
+    new_commend = np.copy(commend)
+    new_commend[ mask] = new_commend[ mask] + dXY_commend_camera[ mask]
     save_xlsx(new_commend.T, os.path.dirname(commend_file_path)+save_name)
     return os.path.dirname(commend_file_path)+save_name
 
@@ -123,22 +125,27 @@ def correct_glue(result_path,save_path,modules):
     new_dxy[modules - 1] = new_dxy[modules-1] + pixel_to_mm*dXY
     np.savetxt(save_path,new_dxy)
 
+
+def get_lattest_file(path):
+    return os.path.join(path,np.sort(os.listdir(path))[-1])
+
+
 if __name__=='__main__':
-    camera_file_path=r"C:\GluingRobotData\Data_gluing\2024_02_19\192.168.200.2\SD2\cv-x\result\SD1_001\240220_115703.txt"
+    path_base = r"C:\GluingRobotData\Data_gluing\2024_02_19"
+    camera_file_path = get_lattest_file(path_base + r"\192.168.200.2\SD2\cv-x\result\SD1_001" )
+    print(camera_file_path)
     commend_file_path= r"C:\GluingRobotData\coord_correction\commends/commend.xlsx"
     new_commend_file_path = correct_commend(commend_file_path, camera_file_path, save_name='/corrected_commend.xlsx')
     #get_XY_glue_5spots_selected_module(new_commend_file_path, gluing_module=np.arange(1,16),dots_number=5, file_name='_dot_gluing_selected.xlsx')
     #scan_profile_modules(commend_file_path, gluing_module = [14])
     #correct_glue(r"C:\GluingRobotData\Data_gluing\2024_02_19\192.168.200.2\SD2\cv-x\result\SD1_013\240220_114535.txt","C:\GluingRobotData\coord_correction\dXY_camera_glue_bis.txt", modules=np.arange(1,16))
     #dXY_camera_glue = np.loadtxt(r"C:\GluingRobotData\coord_correction\dXY_camera_glue.txt")
-    #get_XY_glue_selected_module(commend_file_path,gluing_module=np.arange(1,16),dots_number=1)
+    get_XY_glue_selected_module(new_commend_file_path,gluing_module=[1,2,3,4,5,6,7,12],dots_number=5)
     """modules_to_glue = [22]
     XY = get_XY_camera_mean(file_path)
     commend = get_commend(commend_file_path)
     get_new_commend(XY, commend, commend_file_path, "/corrected_commend.xlsx")
     get_uv_pos(XY, commend, commend_file_path, gluing_module=[i for i in range(19,25)],filename='uv_19_to_24.xlsx')"""
-
-#np.arange(7,25,1)
 
 
 
