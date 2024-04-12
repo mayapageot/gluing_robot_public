@@ -11,37 +11,18 @@ locale.setlocale(locale.LC_TIME, 'fr_FR.UTF-8')
 path_img = "/local/home/mp274748/Documents/glue_analysis/data/BDPT_v2/drive-download-20240407T215728Z-001"
 from PIL import Image, ImageTk
 import tksheet
-df = pd.read_csv("/local/home/mp274748/Documents/glue_analysis/data/BDPT_v2/drive-download-20240407T215728Z-001/analysis.csv")
+df = pd.read_csv("/local/home/mp274748/Documents/glue_analysis/data/BDPT_v2/drive-download-20240407T215728Z-001/analysis_b.csv")
 
 
 def convert_time(hours, minutes="00"):
     return int('{:02d}{:02d}00'.format(int(hours), int(minutes)))
-def get_dates():
-    start_date = start_cal.get_date()
-    start_time = convert_time(start_time_hour_combobox.get(),start_time_min_combobox.get())
-    end_time = convert_time(end_time_hour_combobox.get(),end_time_min_combobox.get())
 
-    file_sel = []
-    for file in os.listdir(path_img):
-        time = int(file[7:13])
-        if time < end_time and time >start_time :
-            file_sel.append(file)
-    """image_prev = tk.Toplevel(root)
-    image_prev.title("New Window")
-    image_prev.geometry("200x200")
-    p = int(np.sqrt(len(file_sel)))
-    buttons = []
-    for i,file in enumerate(file_sel):
-        image = Image.open(os.path.join(path_img,file))
-        image = image.crop((100, 100, 120, 120))
-        photo = ImageTk.PhotoImage(image)
-        button = tk.Button(image_prev, text = 'Click Me !', command=lambda f=file:print(f))
-        button.grid(row=i%p, column=i//p, padx=5, pady=5)
-        buttons.append(button)"""
+
 def get_image(*args):
     start_date = start_cal.get_date()
     start_time = convert_time(start_time_hour_combobox.get(), start_time_min_combobox.get())
     end_time = convert_time(end_time_hour_combobox.get(), end_time_min_combobox.get())
+    module = module_combobox.get()
     file_sel = []
     for file in os.listdir(path_img):
         if file[-4:] == ".bmp":
@@ -49,20 +30,26 @@ def get_image(*args):
             if time < end_time and time > start_time:
                 file_sel.append(file)
     if len(file_sel) > 0:
+        modules = list(df.loc[df["filename"].isin(file_sel),"module"].unique())
+        modules.append("all")
+        module_combobox.configure(values = modules)
+    if module != "all":
+        df_bis = df.loc[df["module"] == int(module), 'filename']
+        file_sel = df_bis[df_bis.isin(file_sel)].unique()
+
+    if len(file_sel) > 0:
         file_sel = list(np.sort(file_sel))
         image_combobox.configure(values = file_sel)
         image_combobox.set(file_sel[0])
+        update_val()
     else:
         image_combobox.configure(values = [])
         image_combobox.set([])
 
+
 def update_val(*arg):
     file = image_combobox.get()
     df_file = df.loc[df['filename'] == file]
-    """radius_arr_label.configure(text = '\t'.join([f'{item:4.0f}' for item in df_file['diameter'].array]))
-    xposes_arr_label.configure(text = '\t'.join([f'{item:4.0f}' for item in df_file['center_x'].array]))
-    yposes_arr_label.configure(text = '\t'.join([f'{item:4.0f}' for item in df_file['center_y'].array]))
-    module_arr_label.configure(text = str(df_file['module'].array[0]))"""
     data = df_file.loc[:,('center_x','center_y','diameter','module')].to_numpy().T
     sheet.set_sheet_data([[f"{val:.0f}" for val in arr] for arr in data])
 def plot_images():
@@ -112,12 +99,18 @@ end_time_min_combobox.bind("<<ComboboxSelected>>",func = get_image)
 end_time_min_combobox.grid(row=5, column=3, padx=5, pady=5)
 end_time_min_combobox.set("00")
 
+module_var = tk.StringVar()
+module_combobox = ttk.Combobox(root, textvariable=module_var,
+                                 values=["all"],width=10)
+module_combobox.bind("<<ComboboxSelected>>",func = get_image)
+module_combobox.grid(row=6,column=0 ,columnspan=1, padx=10, pady=5)
+module_combobox.set("all")
 
 image_var = tk.StringVar()
 image_combobox = ttk.Combobox(root, textvariable=image_var,
                                  values=[],width=40)
 image_combobox.bind("<<ComboboxSelected>>",func = update_val)
-image_combobox.grid(row=6, columnspan=4, padx=10, pady=5)
+image_combobox.grid(row=6 ,column=1, columnspan=3, padx=10, pady=5)
 
 plot_img_button = ttk.Button(root, text="Plot image", command=plot_images)
 plot_img_button.grid(row=7, columnspan=4, padx=5, pady=5)
