@@ -175,6 +175,35 @@ def get_info_dir(dir_path,df=None):
                df = pd.concat([df, pd.DataFrame(
                    {'filename': [path], 'center_x': [center[0]], 'center_y': [center[1]], 'diameter': [diameter],'module':[module]})])
    return df
+
+def get_mod_from_cam():
+    df_py = pd.read_csv(
+        "/local/home/mp274748/Documents/glue_analysis/data/BDPT_v2/drive-download-20240407T215728Z-001/analysis.csv")
+    df_cam = pd.read_csv(
+        "/local/home/mp274748/Documents/glue_analysis/data/BDPT_v2/drive-download-20240407T215728Z-001/240404_122813.txt",
+        header = None)
+    df_cam["filename"] = [
+        "{:02d}{:02d}{:02d}_{:02d}{:02d}{:02d}_{:010d}.bmp".format(df_cam.loc[i, 18], df_cam.loc[i, 19],
+                                                                   df_cam.loc[i, 20],
+                                                                   df_cam.loc[i, 21], df_cam.loc[i, 22],
+                                                                   df_cam.loc[i, 23],
+                                                                   df_cam.loc[i, 17]
+                                                                   ) for i in range(len(df_cam))]
+    df = df_cam.iloc[:, 3:16] == 0
+    last_true_positions = df.apply(lambda row: row[row].index[0] - 2 if any(row) else 0, axis = 1)
+    previous = 0
+    for line in range(len(last_true_positions)):
+        if last_true_positions[line] == 0:
+            last_true_positions[line] = previous
+        previous = last_true_positions[line]
+    df_cam["module"] = last_true_positions
+    mod = []
+    for i in range(len(df_py)):
+        mod.append(df_cam.loc[df_cam.loc[:, 17] == int(df_py.loc[i, "filename"][-14:-4]), "module"].values[0])
+    df_py["module"] = mod
+    df_py.to_csv(
+        "/local/home/mp274748/Documents/glue_analysis/data/BDPT_v2/drive-download-20240407T215728Z-001/analysis_b.csv",
+        index = False)
 def get_info_zip(zip_file_path, df=None):
    if df is None:
        df = pd.DataFrame({'filename':[],'center_x':[],'center_y':[],'diameter':[]})
