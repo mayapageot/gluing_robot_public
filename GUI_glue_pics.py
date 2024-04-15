@@ -8,12 +8,14 @@ import numpy as np
 import pandas as pd
 # Set the locale to French
 locale.setlocale(locale.LC_TIME, 'fr_FR.UTF-8')
-path_img = "/local/home/mp274748/Documents/glue_analysis/data/BDPT_v2/drive-download-20240407T215728Z-001"
+path_img = "/local/home/mp274748/Documents/glue_analysis/data/BDPT_v2/drive-download-20240407T212046Z-001"
 from PIL import Image, ImageTk
 import tksheet
-df = pd.read_csv("/local/home/mp274748/Documents/glue_analysis/data/BDPT_v2/drive-download-20240407T215728Z-001/analysis_b.csv")
+#df = pd.read_csv("/local/home/mp274748/Documents/glue_analysis/data/BDPT_v2/drive-download-20240407T215728Z-001/analysis_2.csv")
+df = pd.read_csv("/local/home/mp274748/Documents/glue_analysis/data/BDPT_v2/drive-download-20240407T212046Z-001/analysis_2.csv")
 
-
+sorting_order = { 'br': 0, 'bl': 1,'m': 2, 'tr': 3, 'tl': 4}
+sorting_key = lambda x: sorting_order.get(x, float('inf'))
 def convert_time(hours, minutes="00"):
     return int('{:02d}{:02d}00'.format(int(hours), int(minutes)))
 
@@ -50,7 +52,7 @@ def get_image(*args):
 def update_val(*arg):
     file = image_combobox.get()
     df_file = df.loc[df['filename'] == file]
-    data = df_file.loc[:,('center_x','center_y','diameter','module')].to_numpy().T
+    data = df_file.sort_values(by='position', key=lambda x: x.map(sorting_key)).loc[:,('center_x','center_y','diameter','module')].to_numpy().T
     sheet.set_sheet_data([[f"{val:.0f}" for val in arr] for arr in data])
 def plot_images():
     file = image_combobox.get()
