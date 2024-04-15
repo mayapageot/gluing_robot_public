@@ -1,24 +1,24 @@
 import cv2
 import numpy as np
+import glob
 import os
 import zipfile
 import pandas as pd
 import matplotlib.pyplot as plt
-#from python_files.utility.plots import slidded_bin_histogram,create_calibrated_ax, bigger_plot
-import pytesseract
 import os
-# Path to Tesseract executable
-pytesseract.pytesseract.tesseract_cmd = r'C:\Users\admin-local\AppData\Local\Programs\Tesseract-OCR\tesseract.exe'
 conf_dict = {'2':80,'3':70,'4':80,'5':25,'6':60,'7':80,'12':80}
 import time
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-templates = {}
-for i in range(1,13):
-    template_path = r"C:\GluingRobotData\coord_correction\template_numbers\{}.bmp".format(i)  # Replace with the path to your template images
-    template = cv2.imread(template_path, cv2.IMREAD_GRAYSCALE)
-    templates[str(i)] = template
+def load_temp():
+    templates = {}
+    for i in range(1,13):
+        template_path = r"C:\GluingRobotData\coord_correction\template_numbers\{}.bmp".format(i)  # Replace with the path to your template images
+        template = cv2.imread(template_path, cv2.IMREAD_GRAYSCALE)
+        templates[str(i)] = template
+    return templates
 def detect_numbers(image_path, templates):
+    templates = load_temp
     # Read the image
     image = cv2.imread(image_path)[1600:3200, :1200]
     image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -37,6 +37,14 @@ def detect_numbers(image_path, templates):
         if len(loc[0]>0):
             return digit
     return 0
+
+def filter(im,thr=80):
+    gray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+    # Apply Gaussian blur to reduce noise
+    blurred = cv2.GaussianBlur(gray, (11, 11), 0)
+    # Threshold the image to create a binary image
+    mask = cv2.inRange(blurred, 0, thr)
+    return mask
 def Imshow(image):
     screen_res = 1280, 720  # Adjust these values according to your screen resolution
     scale_width = screen_res[0] / image.shape[1]
@@ -56,14 +64,10 @@ def Imshow(image):
     cv2.moveWindow("Result", x, y)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+
+
 def get_glue_dot(image):
-   # Load the image
-   # Convert the image to grayscale
-   gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-   # Apply Gaussian blur to reduce noise
-   blurred = cv2.GaussianBlur(gray, (11, 11), 0)
-   # Threshold the image to create a binary image
-   mask = cv2.inRange(blurred, 0, 100)
+   mask = filter(image,50)
    # Find contours
    contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
    ellipse_list = []
@@ -85,25 +89,10 @@ def get_glue_dot(image):
    return center_list,diameter_list
 
 
-def plot_image_with_ellipse(image_with_keypoints,ellipse_list):
+def plot_image_with_ellipse(image,ellipse_list):
    for ellipse in ellipse_list:
-       cv2.ellipse(image_with_keypoints,ellipse,(255,0,0),2)
-
-
-   # Resize the image to fit the screen
-   screen_res = 1280, 720  # Adjust these values according to your screen resolution
-   scale_width = screen_res[0] / image_with_keypoints.shape[1]
-   scale_height = screen_res[1] / image_with_keypoints.shape[0]
-   scale = min(scale_width, scale_height)
-   window_width = int(image_with_keypoints.shape[1] * scale)
-   window_height = int(image_with_keypoints.shape[0] * scale)
-   # Output positions and diameters of detected glue dots
-   # Display the result
-   cv2.namedWindow('Detected Glue Dots', cv2.WINDOW_NORMAL)  # Create resizable window
-   cv2.resizeWindow('Detected Glue Dots', window_width, window_height)
-   cv2.imshow('Detected Glue Dots', image_with_keypoints)
-   cv2.waitKey(0)
-   cv2.destroyAllWindows()
+       cv2.ellipse(image,ellipse,(255,0,0),2)
+   Imshow(image)
 
 
 
@@ -153,8 +142,8 @@ def get_num(image_path):
             print(data['left'][i], data['top'][i], data['width'][i], data['height'][i])'''
 
 
-dir_path= r"C:\GluingRobotData\Data_gluing\2024_02_19\192.168.200.2\SD2\cv-x\image\SD1_003\240404_122817\CAM1"
-dirs = os.listdir(dir_path)
+#dir_path= r"C:\GluingRobotData\Data_gluing\2024_02_19\192.168.200.2\SD2\cv-x\image\SD1_003\240404_122817\CAM1"
+#dirs = os.listdir(dir_path)
 
 def get_info_dir(dir_path,df=None):
    if df is None:
@@ -167,28 +156,24 @@ def get_info_dir(dir_path,df=None):
            path = os.path.join(dir_path,file)
            im = cv2.imread(path)
            center_list, diameter_list = get_glue_dot(im)
-           module = detect_numbers(path, templates)
+           """module = detect_numbers(path, templates)
            if module==0:
-               module = module_prec
+               module = module_prec"""
+           module = 0
            #plot_image_with_circle(im, center_list, diameter_list)
            for center, diameter in zip(center_list, diameter_list):
                df = pd.concat([df, pd.DataFrame(
-                   {'filename': [path], 'center_x': [center[0]], 'center_y': [center[1]], 'diameter': [diameter],'module':[module]})])
+                   {'filename': [file], 'center_x': [center[0]], 'center_y': [center[1]], 'diameter': [diameter],'module':[module]})])
    return df
 
-def get_mod_from_cam():
-    df_py = pd.read_csv(
-        "/local/home/mp274748/Documents/glue_analysis/data/BDPT_v2/drive-download-20240407T215728Z-001/analysis.csv")
-    df_cam = pd.read_csv(
-        "/local/home/mp274748/Documents/glue_analysis/data/BDPT_v2/drive-download-20240407T215728Z-001/240404_122813.txt",
-        header = None)
-    df_cam["filename"] = [
-        "{:02d}{:02d}{:02d}_{:02d}{:02d}{:02d}_{:010d}.bmp".format(df_cam.loc[i, 18], df_cam.loc[i, 19],
-                                                                   df_cam.loc[i, 20],
-                                                                   df_cam.loc[i, 21], df_cam.loc[i, 22],
-                                                                   df_cam.loc[i, 23],
-                                                                   df_cam.loc[i, 17]
-                                                                   ) for i in range(len(df_cam))]
+
+
+def get_mod_from_cam(df_py=None,df_cam=None,path_py=None,path_cam=None):
+    if df_py is None:
+        df_py = pd.read_csv(path_py)
+    if df_cam is None:
+        df_cam = pd.read_csv(path_cam, header = None)
+    df_py = df_py.sort_values("filename")
     df = df_cam.iloc[:, 3:16] == 0
     last_true_positions = df.apply(lambda row: row[row].index[0] - 2 if any(row) else 0, axis = 1)
     previous = 0
@@ -199,11 +184,13 @@ def get_mod_from_cam():
     df_cam["module"] = last_true_positions
     mod = []
     for i in range(len(df_py)):
+        print(df_cam.loc[df_cam.loc[:, 17] == int(df_py.loc[i, "filename"][-14:-4]), "module"].values[0])
         mod.append(df_cam.loc[df_cam.loc[:, 17] == int(df_py.loc[i, "filename"][-14:-4]), "module"].values[0])
     df_py["module"] = mod
-    df_py.to_csv(
-        "/local/home/mp274748/Documents/glue_analysis/data/BDPT_v2/drive-download-20240407T215728Z-001/analysis_b.csv",
-        index = False)
+    print(df_py)
+    return df_py
+
+
 def get_info_zip(zip_file_path, df=None):
    if df is None:
        df = pd.DataFrame({'filename':[],'center_x':[],'center_y':[],'diameter':[]})
@@ -244,44 +231,21 @@ def multiple_zip(dir_path,name):
 
 
 
-
 def hhmmss_to_seconds(hhmmss):
    hours = int(hhmmss[:2])
    minutes = int(hhmmss[2:4])
    seconds = int(hhmmss[4:])
-
-
    total_seconds = hours * 3600 + minutes * 60 + seconds
    return total_seconds
 
 
-def glue_dots_analysis(df):
-   data = df["diameter"].to_numpy()
-   number = df["filename"].apply(lambda x : int(os.path.split(x)[1][-14:-4])).to_numpy()
-   time = df["filename"].apply(lambda x : hhmmss_to_seconds(os.path.split(x)[1][7:13])/60-689-40).to_numpy()
-   plt.scatter(time, data, s = 20)
-   plt.xlabel("time in minutes")
-   plt.ylabel("radius size in pixel")
-   #plt.scatter(number,data,s=1)
-   plt.show()
-   """histo = slidded_bin_histogram(data[(time>37)&(time<45)&(data<250)&(data>200)], wbin = 1, n_min = 10, n_max = 1000)
-   histo.ax.set_xlabel('radius of the dots in pxl')
-   histo.ax.set_ylabel('count / pixel')
-   calib = create_calibrated_ax(histo.ax, np.poly1d([0.001243163, 0]))
-   calib.ax.set_xlabel('radius of the dots in mm')
-   print(np.mean(data[(time>37)&(time<45)&(data<250)&(data>200)]), np.std(data[(time>37)&(time<45)&(data<250)&(data>200)]))
-   print(np.mean(data[(time>37)&(time<45)&(data<250)&(data>200)])*0.001243163, np.std(data[(time>37)&(time<45)&(data<250)&(data>200)])*0.001243163)
-   print(data[(time>37)&(time<45)&(data<250)&(data>200)])
-   #print(np.mean(data) * (0.001243163) ** 3 * 1000, np.std(data) * (0.001243163) ** 3 * 1000)
-   histo.histoline.set(linewidth = 1.)
-   plt.show()"""
 
 def post_analysis_dir(dir_path = r'C:\GluingRobotData\Data_gluing\2024_02_19\192.168.200.2\SD2\cv-x\image\SD1_003\240403_131011\CAM1'):
-    save_path = dir_path + r'\analysis.csv'
-    name = 'glueing_bdpt_2024_04_03'
+    save_path = os.path.join(dir_path,'analysis_2.csv')
     df = get_info_dir(dir_path)
-    print(df)
-    df.to_csv(save_path)
+    df.to_csv(save_path,index = False)
+
+
 class NewFileHandler(FileSystemEventHandler):
     def __init__(self,df,path):
         super().__init__()
@@ -319,39 +283,43 @@ def continuous_analysis(dir_path,save_name = r'\analysis_log.csv'):
         observer.stop()
     observer.join()
 
+def sort_key(row):
+    x, y = row['center_x'], row['center_y']
+    thr = 200
+    if x < -thr and y > thr:
+        return "tl"  # Top left
+    elif x > thr and y > thr:
+        return "tr" # Top right
+    elif x > thr and y < -thr:
+        return "br"  # Bottom right
+    elif x < -thr and y < -thr:
+        return "bl"  # Bottom left
+    else :
+        return "m"
+
+def get_dot_pos_from(df):
+    df_xy = df.loc[:, ("center_x", "center_y")]
+    df_sort = df_xy - df_xy.mean()
+    index_sort = df_sort.apply(sort_key, axis = 1)
+    return index_sort
+
+def get_glue_dot_pos(df_py=None,path_py=None):
+    if df_py is None:
+        df_py = pd.read_csv(path_py)
+    df = df_py.loc[(df_py["diameter"]-270).abs()<100]
+    group = df.groupby("filename").apply(get_dot_pos_from,include_groups=False).to_numpy()
+    df['position']=group
+    return df
 
 if __name__=="__main__":
-   """path_test = '/local/home/mp274748/Documents/glue_robot/240322/240322_124905_0000000373.bmp'
-
-
-   image = cv2.imread(path_test)
-   center_list,diameter_list = get_glue_dot(path_test)
-   plot_image_with_circle(path_test, center_list, diameter_list)"""
-   save_path = r'C:\GluingRobotData\Data_gluing\2024_02_19\192.168.200.2\SD2\cv-x\image\SD1_003\240403_131011\CAM1\analysis.csv'
-   dir_path = r'C:\GluingRobotData\Data_gluing\2024_02_19\192.168.200.2\SD2\cv-x\image\SD1_003\240404_122817\CAM1'
-   post_analysis_dir(
-       dir_path=r'C:\GluingRobotData\Data_gluing\2024_02_19\192.168.200.2\SD2\cv-x\image\SD1_003\240404_122817\CAM1')
+   dir_path = "/local/home/mp274748/Documents/glue_analysis/data/BDPT_v2/drive-download-20240407T212046Z-001/"
+   #post_analysis_dir(dir_path)
+   path_py = dir_path + "analysis_2.csv"
+   path_cam = dir_path + glob.glob("*.txt",root_dir = "/local/home/mp274748/Documents/glue_analysis/data/BDPT_v2/drive-download-20240407T212046Z-001/")[0]
+   df = get_mod_from_cam(df_py = None, df_cam = None, path_py = path_py, path_cam = path_cam)
+   df = get_glue_dot_pos(df)
+   df.sort_values("filename").to_csv(path_py,index = False)
    #continuous_analysis(dir_path)
    #df = pd.read_csv(save_path)
-   """df = df[(df['diameter'] >= 200) & (df['diameter'] <= 300)]
-   grouped = df.groupby('filename').mean()
 
-
-   threshold = grouped['center_x'] + 600
-
-
-   # Filtering for filenames with count greater than the threshold
-   filtered_groups = grouped[grouped['center_x'] < threshold]
-
-
-   # Getting the rows corresponding to these filenames
-   result = df[df['filename'].isin(filtered_groups.index)]
-
-
-   grouped = result.groupby('filename').count()
-   filtered_groups = grouped[grouped['center_x'] == 5]
-   result = result[result['filename'].isin(filtered_groups.index)]"""
-   '''bigger_plot()
-   df = df[(df['center_x'].apply(lambda x:np.abs(x-2300)) < 200 ) & (df['center_y'].apply(lambda x:np.abs(x-1760)) < 200 )]
-   glue_dots_analysis(df)'''
 
