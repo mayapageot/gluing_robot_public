@@ -64,10 +64,15 @@ def Imshow(image):
     cv2.moveWindow("Result", x, y)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+def filter_guesses(center_list, diameter_list ,rmax = 300,rmin=200):
+    center_list = np.array(center_list)
+    diameter_list = np.array(diameter_list)
 
+    return center_list[(diameter_list<rmin)&(diameter_list>rmax)], diameter_list[(diameter_list<rmin)&(diameter_list>rmax)]
 
-def get_glue_dot(image):
-   mask = filter(image,50)
+def get_glue_dot(image,thr = 50):
+   mask = filter(image,thr = thr)
+   #Imshow(mask)
    # Find contours
    contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
    ellipse_list = []
@@ -94,7 +99,18 @@ def plot_image_with_ellipse(image,ellipse_list):
        cv2.ellipse(image,ellipse,(255,0,0),2)
    Imshow(image)
 
-
+def plot_img(image_with_keypoints,center_list,diameter_list):
+    fig,ax =  plt.subplots(figsize=(10,7))
+    for center, dimeter in zip(center_list, diameter_list):
+        Drawing_colored_circle = plt.Circle(center, int(dimeter), fill=None, color='g', lw=2)
+        ax.add_artist(Drawing_colored_circle)
+        text = f'R = {int(dimeter)}'
+        ax.text(center[0]-dimeter,center[1]-dimeter*1.1,text,c='g')
+    ax.imshow(image_with_keypoints)
+    ax.set_aspect(1)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    plt.show()
 
 
 def plot_image_with_circle(image_with_keypoints,center_list,diameter_list):
@@ -175,7 +191,9 @@ def get_mod_from_cam(df_py=None,df_cam=None,path_py=None,path_cam=None):
         df_cam = pd.read_csv(path_cam, header = None)
     df_py = df_py.sort_values("filename")
     df = df_cam.iloc[:, 3:16] == 0
-    last_true_positions = df.apply(lambda row: row[row].index[0] - 2 if any(row) else 0, axis = 1)
+    print(df)
+    last_true_positions = df.apply(lambda row: row[row].index[0] if any(row) else 0, axis = 1).to_numpy()
+    print(last_true_positions)
     previous = 0
     for line in range(len(last_true_positions)):
         if last_true_positions[line] == 0:
@@ -184,8 +202,8 @@ def get_mod_from_cam(df_py=None,df_cam=None,path_py=None,path_cam=None):
     df_cam["module"] = last_true_positions
     mod = []
     for i in range(len(df_py)):
-        print(df_cam.loc[df_cam.loc[:, 17] == int(df_py.loc[i, "filename"][-14:-4]), "module"].values[0])
-        mod.append(df_cam.loc[df_cam.loc[:, 17] == int(df_py.loc[i, "filename"][-14:-4]), "module"].values[0])
+        #print(df_cam.loc[df_cam.loc[:, 17] == int(df_py.loc[i, "filename"][-14:-4]), "module"].values[0])
+        mod.append(df_cam.loc[df_cam.loc[:, "n"] == int(df_py.loc[i, "filename"][-14:-4]), "module"].values[0])
     df_py["module"] = mod
     print(df_py)
     return df_py
@@ -255,16 +273,18 @@ class NewFileHandler(FileSystemEventHandler):
         # This function is called when a file is created
         if not event.is_directory:  # Check if the event is for a file
             path = event.src_path  # Print the path of the new file
-            print(path)
             image = cv2.imread(path)
             center_list, diameter_list = get_glue_dot(image)
+            head, tail = os.path.split(path)
             for center, diameter in zip(center_list, diameter_list):
+                #df_file = pd.DataFrame(
+                #    {'filename': [tail], 'center_x': [center[0]], 'center_y': [center[1]], 'diameter': [diameter]})
                 self.df = pd.concat([self.df, pd.DataFrame(
-                    {'filename': [path], 'center_x': [center[0]], 'center_y': [center[1]], 'diameter': [diameter]})])
+                    {'filename': [tail], 'center_x': [center[0]], 'center_y': [center[1]], 'diameter': [diameter]})])
             print(center_list)
             print(diameter_list)
-            plot_image_with_circle(image, center_list, diameter_list)
-            self.df.to_csv(self.path,columns=None)
+            plot_img(image, center_list, diameter_list)
+            self.df.to_csv(self.path, index=False)
 
 def continuous_analysis(dir_path,save_name = r'\analysis_log.csv'):
     save_path = dir_path + save_name
@@ -287,13 +307,13 @@ def sort_key(row):
     x, y = row['center_x'], row['center_y']
     thr = 200
     if x < -thr and y > thr:
-        return "tl"  # Top left
+        return "bl"  # Top left
     elif x > thr and y > thr:
-        return "tr" # Top right
+        return "br" # Top right
     elif x > thr and y < -thr:
-        return "br"  # Bottom right
+        return "tr"  # Bottom right
     elif x < -thr and y < -thr:
-        return "bl"  # Bottom left
+        return "tl"  # Bottom left
     else :
         return "m"
 
@@ -306,20 +326,32 @@ def get_dot_pos_from(df):
 def get_glue_dot_pos(df_py=None,path_py=None):
     if df_py is None:
         df_py = pd.read_csv(path_py)
-    df = df_py.loc[(df_py["diameter"]-270).abs()<100]
-    group = df.groupby("filename").apply(get_dot_pos_from,include_groups=False).to_numpy()
-    df['position']=group
+    df = df_py.loc[(df_py["diameter"]-270).abs()<50]
+    group = df.groupby("filename",group_keys = False).apply(get_dot_pos_from).to_numpy()
+    print(group)
+    df.loc[:,'position']=group
     return df
 
 if __name__=="__main__":
-   dir_path = "/local/home/mp274748/Documents/glue_analysis/data/BDPT_v2/drive-download-20240407T212046Z-001/"
-   #post_analysis_dir(dir_path)
-   path_py = dir_path + "analysis_2.csv"
-   path_cam = dir_path + glob.glob("*.txt",root_dir = "/local/home/mp274748/Documents/glue_analysis/data/BDPT_v2/drive-download-20240407T212046Z-001/")[0]
-   df = get_mod_from_cam(df_py = None, df_cam = None, path_py = path_py, path_cam = path_cam)
+   #dir_path = "/local/home/mp274748/Documents/glue_analysis/data/BDPT_v2/drive-download-20240407T212046Z-001/"
+   dir_path = r"C:\GluingRobotData\Data_gluing\2024_02_19\192.168.200.2\SD2\cv-x\image\SD1_003\240506_131040\CAM1"
+   post_analysis_dir(dir_path)
+   path_py = dir_path + r"\analysis_2.csv"
+   path_cams = glob.glob(r"C:\GluingRobotData\Data_gluing\2024_02_19\192.168.200.2\SD2\cv-x\result\SD1_003\240506_*.txt")
+   df_cam = pd.DataFrame({})
+   names = ["x","y","r",1,2,3,4,5,6,7,8,9,10,11,12,13,14,"n","yy","MM","dd","hh","mm","ss"]
+   for path_cam in path_cams:
+       df = pd.read_csv(path_cam,names=names)
+       df_cam = pd.concat((df_cam,df))
+   print(df_cam)
+   df = get_mod_from_cam(df_py = None, df_cam = df_cam, path_py = path_py, path_cam = None)
    df = get_glue_dot_pos(df)
-   df.sort_values("filename").to_csv(path_py,index = False)
+   df.sort_values("filename").to_csv(path_py, index=False)
+   """path = dir_path + r"\240503_144021_0000000232.bmp"
+   print(path)
+   im = cv2.imread(path)
+   center_list, diameter_list = get_glue_dot(im)
+   print(center_list, diameter_list)"""
    #continuous_analysis(dir_path)
-   #df = pd.read_csv(save_path)
 
 

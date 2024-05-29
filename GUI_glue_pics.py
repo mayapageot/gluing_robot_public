@@ -1,24 +1,39 @@
 import os
 import tkinter as tk
 from tkinter import ttk
+
+import cv2
 from tkcalendar import Calendar
 from datetime import datetime
+import matplotlib.pyplot as plt
 import locale
 import numpy as np
 import pandas as pd
 # Set the locale to French
 locale.setlocale(locale.LC_TIME, 'fr_FR.UTF-8')
-path_img = "/local/home/mp274748/Documents/glue_analysis/data/BDPT_v2/drive-download-20240407T212046Z-001"
+path_img = r"C:\GluingRobotData\Data_gluing\2024_02_19\192.168.200.2\SD2\cv-x\image\SD1_003\240506_131040\CAM1"
 from PIL import Image, ImageTk
 import tksheet
 #df = pd.read_csv("/local/home/mp274748/Documents/glue_analysis/data/BDPT_v2/drive-download-20240407T215728Z-001/analysis_2.csv")
-df = pd.read_csv("/local/home/mp274748/Documents/glue_analysis/data/BDPT_v2/drive-download-20240407T212046Z-001/analysis_2.csv")
+df = pd.read_csv(r"C:\GluingRobotData\Data_gluing\2024_02_19\192.168.200.2\SD2\cv-x\image\SD1_003\240506_131040\CAM1\analysis_2.csv")
 
 sorting_order = { 'br': 0, 'bl': 1,'m': 2, 'tr': 3, 'tl': 4}
 sorting_key = lambda x: sorting_order.get(x, float('inf'))
 def convert_time(hours, minutes="00"):
     return int('{:02d}{:02d}00'.format(int(hours), int(minutes)))
 
+def plot_img(image_with_keypoints,center_list,diameter_list):
+    fig,ax =  plt.subplots(figsize=(10,7))
+    for center, dimeter in zip(center_list, diameter_list):
+        Drawing_colored_circle = plt.Circle(center, int(dimeter), fill=None, color='g', lw=2)
+        ax.add_artist(Drawing_colored_circle)
+        text = f'R = {int(dimeter)}'
+        ax.text(center[0]-dimeter,center[1]-dimeter*1.1,text,c='g')
+    ax.imshow(image_with_keypoints)
+    ax.set_aspect(1)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    plt.show()
 
 def get_image(*args):
     start_date = start_cal.get_date()
@@ -56,7 +71,13 @@ def update_val(*arg):
     sheet.set_sheet_data([[f"{val:.0f}" for val in arr] for arr in data])
 def plot_images():
     file = image_combobox.get()
-    image = Image.open(os.path.join(path_img, file))
+    image = cv2.imread(os.path.join(path_img, file))
+    df_filename = df.loc[df['filename'] == file]
+    center_list = df_filename.loc[:,('center_x','center_y')].to_numpy()
+    print(center_list)
+    diameter_list = df_filename.loc[:,'diameter'].to_numpy()
+    print(diameter_list)
+    plot_img(image, center_list, diameter_list)
     image.show()
 root = tk.Tk()
 root.title("Date Range Picker")
