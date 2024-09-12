@@ -38,7 +38,7 @@ def detect_numbers(image_path, templates):
             return digit
     return 0
 
-def filter(im,thr=80):
+def filter(im,thr=70):
     gray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
     # Apply Gaussian blur to reduce noise
     blurred = cv2.GaussianBlur(gray, (11, 11), 0)
@@ -70,7 +70,7 @@ def filter_guesses(center_list, diameter_list ,rmax = 300,rmin=200):
 
     return center_list[(diameter_list<rmin)&(diameter_list>rmax)], diameter_list[(diameter_list<rmin)&(diameter_list>rmax)]
 
-def get_glue_dot(image,thr = 50):
+def get_glue_dot(image,thr =72):
    mask = filter(image,thr = thr)
    #Imshow(mask)
    # Find contours
@@ -169,17 +169,18 @@ def get_info_dir(dir_path,df=None):
    for file in dirs:
        _, extension = os.path.splitext(file)
        if extension.lower() ==".bmp":
-           path = os.path.join(dir_path,file)
-           im = cv2.imread(path)
-           center_list, diameter_list = get_glue_dot(im)
-           """module = detect_numbers(path, templates)
-           if module==0:
-               module = module_prec"""
-           module = 0
-           #plot_image_with_circle(im, center_list, diameter_list)
-           for center, diameter in zip(center_list, diameter_list):
-               df = pd.concat([df, pd.DataFrame(
-                   {'filename': [file], 'center_x': [center[0]], 'center_y': [center[1]], 'diameter': [diameter],'module':[module]})])
+           if file not in df['filename'].unique():
+               path = os.path.join(dir_path,file)
+               im = cv2.imread(path)
+               center_list, diameter_list = get_glue_dot(im)
+               """module = detect_numbers(path, templates)
+               if module==0:
+                   module = module_prec"""
+               module = 0
+               #plot_image_with_circle(im, center_list, diameter_list)
+               for center, diameter in zip(center_list, diameter_list):
+                   df = pd.concat([df, pd.DataFrame(
+                       {'filename': [file], 'center_x': [center[0]], 'center_y': [center[1]], 'diameter': [diameter],'module':[module]})])
    return df
 
 
@@ -260,7 +261,10 @@ def hhmmss_to_seconds(hhmmss):
 
 def post_analysis_dir(dir_path = r'C:\GluingRobotData\Data_gluing\2024_02_19\192.168.200.2\SD2\cv-x\image\SD1_003\240403_131011\CAM1'):
     save_path = os.path.join(dir_path,'analysis_2.csv')
-    df = get_info_dir(dir_path)
+    try :
+        df = get_info_dir(dir_path,df=pd.read_csv(save_path))
+    except FileNotFoundError:
+        df = get_info_dir(dir_path)
     df.to_csv(save_path,index = False)
 
 
@@ -334,9 +338,9 @@ def get_glue_dot_pos(df_py=None,path_py=None):
 
 if __name__=="__main__":
    #dir_path = "/local/home/mp274748/Documents/glue_analysis/data/BDPT_v2/drive-download-20240407T212046Z-001/"
-   dir_path = r"C:\GluingRobotData\Data_gluing\2024_02_19\192.168.200.2\SD2\cv-x\image\SD1_003\240506_131040\CAM1"
+   dir_path = r"C:\GluingRobotData\Data_gluing\2024_02_19\192.168.200.2\SD2\cv-x\image\SD1_010\240716_164613\CAM1"
    post_analysis_dir(dir_path)
-   path_py = dir_path + r"\analysis_2.csv"
+   """path_py = dir_path + r"\analysis_2.csv"
    path_cams = glob.glob(r"C:\GluingRobotData\Data_gluing\2024_02_19\192.168.200.2\SD2\cv-x\result\SD1_003\240506_*.txt")
    df_cam = pd.DataFrame({})
    names = ["x","y","r",1,2,3,4,5,6,7,8,9,10,11,12,13,14,"n","yy","MM","dd","hh","mm","ss"]
@@ -346,7 +350,7 @@ if __name__=="__main__":
    print(df_cam)
    df = get_mod_from_cam(df_py = None, df_cam = df_cam, path_py = path_py, path_cam = None)
    df = get_glue_dot_pos(df)
-   df.sort_values("filename").to_csv(path_py, index=False)
+   df.sort_values("filename").to_csv(path_py, index=False)"""
    """path = dir_path + r"\240503_144021_0000000232.bmp"
    print(path)
    im = cv2.imread(path)

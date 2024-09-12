@@ -73,7 +73,7 @@ def get_new_commend(XY, commend, commend_file_path, save_name ='/corrected_comme
     mask = np.logical_not(np.any(XY==0, axis=1))
     dXY_commend_camera = -(XY_goal_alignment-XY)*pixel_to_mm
     new_commend = np.copy(commend)
-    new_commend[ mask] = new_commend[ mask] + dXY_commend_camera[ mask]
+    new_commend[ mask] = new_commend[ mask] + dXY_commend_camera[mask]
     save_xlsx(new_commend.T, os.path.dirname(commend_file_path)+save_name)
     return os.path.dirname(commend_file_path)+save_name
 
@@ -140,7 +140,7 @@ if __name__=='__main__':
     #scan_profile_modules(commend_file_path, gluing_module = [14])
     #correct_glue(r"C:\GluingRobotData\Data_gluing\2024_02_19\192.168.200.2\SD2\cv-x\result\SD1_013\240220_114535.txt","C:\GluingRobotData\coord_correction\dXY_camera_glue_bis.txt", modules=np.arange(1,16))
     #dXY_camera_glue = np.loadtxt(r"C:\GluingRobotData\coord_correction\dXY_camera_glue.txt")
-    get_XY_glue_selected_module(new_commend_file_path,gluing_module=[1,2,3,4,5,6,7,12],dots_number=5)
+    get_XY_glue_selected_module(new_commend_file_path,gluing_module=[15,16],dots_number=5)
     """modules_to_glue = [22]
     XY = get_XY_camera_mean(file_path)
     commend = get_commend(commend_file_path)

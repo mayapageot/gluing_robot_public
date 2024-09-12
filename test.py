@@ -1,19 +1,29 @@
-import cv2
+from tksheet import Sheet
+import tkinter as tk
 import numpy as np
-import pandas as pd
-from utility import plots
-import os
-if __name__ == "__main__":
-    dir_path = r"C:\GluingRobotData\Data_gluing\2024_02_19\192.168.200.2\SD2\cv-x\image\SD1_003\240503_105626\CAM1"
-    path_py = dir_path + r"\analysis_2.csv"
-    df = pd.read_csv(path_py)
-    x = df["center_x"]
-    y = df["center_y"]
-    h = 200
-    centered_dot = df.loc[(x<2390.0+h)&(x>2350.0-h)&(y>1680.0-h)&(y<1725.0+h)]
-    radius = centered_dot["diameter"].mean()
-    rms = centered_dot["diameter"].std()
-    print(radius, rms)
-    print(len(centered_dot["diameter"]))
-    plots.slidded_bin_histogram(centered_dot["diameter"],wbin=1)
-    plots.show()
+def test(module,arr):
+    arr
+class demo(tk.Tk):
+    def __init__(self):
+        tk.Tk.__init__(self)
+        self.frame = tk.Frame(self)
+        self.frame.grid_columnconfigure(0, weight=1)
+        self.frame.grid_rowconfigure(0, weight=1)
+        self.sheet = Sheet(self.frame, data=[], expand_sheet_if_paste_too_big=True,
+                           column_width=100,
+                           height=200,
+                           width=1000
+                           )
+        self.sheet.set_index_width(150)
+        self.sheet.enable_bindings()
+        self.sheet.set_index_data(['Type', 'X', 'Y', 'Z', 'Line Speed', 'Circle Angle', 'Condition Number',
+                                   'Job before moving', 'Job while Moving', 'Job after Moving'])
+        self.frame.grid(row=0, column=0, columnspan=5, sticky="nswe")
+        self.sheet.grid(row=0, column=0, columnspan=5, sticky="nswe")
+
+        self.sheet.set_sheet_data(list(np.random.random((10,10))))
+
+
+
+app = demo()
+app.mainloop()

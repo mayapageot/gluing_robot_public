@@ -11,12 +11,12 @@ import numpy as np
 import pandas as pd
 # Set the locale to French
 locale.setlocale(locale.LC_TIME, 'fr_FR.UTF-8')
-path_img = r"C:\GluingRobotData\Data_gluing\2024_02_19\192.168.200.2\SD2\cv-x\image\SD1_003\240506_131040\CAM1"
+path_img = r"C:\GluingRobotData\Data_gluing\2024_02_19\192.168.200.2\SD2\cv-x\image\SD1_010\240716_093510\CAM1"
 from PIL import Image, ImageTk
 import tksheet
 #df = pd.read_csv("/local/home/mp274748/Documents/glue_analysis/data/BDPT_v2/drive-download-20240407T215728Z-001/analysis_2.csv")
-df = pd.read_csv(r"C:\GluingRobotData\Data_gluing\2024_02_19\192.168.200.2\SD2\cv-x\image\SD1_003\240506_131040\CAM1\analysis_2.csv")
-
+df = pd.read_csv(r"C:\GluingRobotData\Data_gluing\2024_02_19\192.168.200.2\SD2\cv-x\image\SD1_010\240716_093510\CAM1\analysis_2.csv")
+#C:\GluingRobotData\Data_gluing\2024_02_19\192.168.200.2\SD2\cv-x\image\SD1_010\240607_104955\CAM1
 sorting_order = { 'br': 0, 'bl': 1,'m': 2, 'tr': 3, 'tl': 4}
 sorting_key = lambda x: sorting_order.get(x, float('inf'))
 def convert_time(hours, minutes="00"):
