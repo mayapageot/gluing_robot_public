@@ -10,6 +10,28 @@ conf_dict = {'2':80,'3':70,'4':80,'5':25,'6':60,'7':80,'12':80}
 import time
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+from scipy.interpolate import griddata
+df = pd.read_csv("/local/home/mp274748/Documents/data/Glue/240607_104955/CAM1/analysis_2.csv")
+df = df[df["diameter"] < 400]
+df_diam_correction = df[(df["num"] < 319) & (df["num"] > 218)]
+def interpo_function(x,y):
+    return griddata(df_diam_correction.loc[:, ["center_x", "center_y"]], df_diam_correction["diameter"] / df_diam_correction["diameter"].max(), ([x], [y]))[0]
+
+
+def correct_diameter(center, diameter ):
+    factor = interpo_function(center[0],center[1])
+    return diameter* factor if factor is not None else 0.
+
+def find_pos_pic(df):
+    #delta_pos = {"position":["br","bl","m","tr","tl"],"x":[500,-500,0,500,-500],"y":[500,500,0,-500,-500]}
+    #central_coo = [2367.0,1726.0]
+    df["distance_center"] = (df["center_x"]-2367.0)**2 + (df["center_y"] - 1726.0)**2
+    pos_center = df.groupby("filename").apply(lambda x : x.loc[x["distance_center"].idxmin(),"position"],include_groups=False)
+    df["pos_center_dot"] = pos_center[df["filename"]].values
+    df = df.drop("distance_center", axis = 'columns')
+    return df
+
+
 def load_temp():
     templates = {}
     for i in range(1,13):
@@ -41,10 +63,23 @@ def detect_numbers(image_path, templates):
 def filter(im,thr=80):
     gray = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
     # Apply Gaussian blur to reduce noise
-    blurred = cv2.GaussianBlur(gray, (11, 11), 0)
+
+    blurred = cv2.GaussianBlur(gray, (9,9), 0) #(11, 11)
+    #Imshow(median)
     # Threshold the image to create a binary image
     mask = cv2.inRange(blurred, 0, thr)
-    return mask
+    n = 18
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (n,n))
+    median = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    return median
+
+def filter_heater(image,thr=100):
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    n = 71
+    blur = cv2.GaussianBlur(gray, (n, n), 0)
+    ret3, th3 = cv2.threshold(blur, 0, 255,
+                              cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    return th3
 def Imshow(image):
     screen_res = 1280, 720  # Adjust these values according to your screen resolution
     scale_width = screen_res[0] / image.shape[1]
@@ -65,15 +100,18 @@ def Imshow(image):
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
+rectangle = [656,2290, 1300,2900]
+def get_glue_dot(image,thr=60):
+    im = image
 
-def get_glue_dot(image):
-   mask = filter(image,50)
-   # Find contours
-   contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-   ellipse_list = []
-   center_list = []
-   diameter_list = []
-   for cnt in contours:
+    mask = filter(im,thr) #for ntd : 50
+    Imshow(mask)
+    contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    #cv2.drawContours(image, contours, -1, (0, 255, 0), 3)
+    ellipse_list = []
+    center_list = []
+    diameter_list = []
+    for cnt in contours:
        try :
            ellipse = cv2.fitEllipse(cnt)
            if np.abs(ellipse[1][0]-ellipse[1][1])<100 and ellipse[1][0]>300:
@@ -84,9 +122,22 @@ def get_glue_dot(image):
                equi_diameter = np.sqrt(4 * area / np.pi) / 2
                diameter_list.append(equi_diameter)
                center_list.append(center)
+
        except:
            pass
-   return center_list,diameter_list
+    """
+    if len(center_list)>0:
+        plot_image_with_circle(image, center_list, diameter_list)"""
+    if len(center_list)!=5:
+        pom = input("+ or -")
+        try:
+            thr = int(pom)
+            return get_glue_dot(image,thr)
+        except ValueError:
+            pass
+
+
+    return center_list,diameter_list
 
 
 def plot_image_with_ellipse(image,ellipse_list):
@@ -154,6 +205,7 @@ def get_info_dir(dir_path,df=None):
        _, extension = os.path.splitext(file)
        if extension.lower() ==".bmp":
            path = os.path.join(dir_path,file)
+           print(path)
            im = cv2.imread(path)
            center_list, diameter_list = get_glue_dot(im)
            """module = detect_numbers(path, templates)
@@ -162,6 +214,7 @@ def get_info_dir(dir_path,df=None):
            module = 0
            #plot_image_with_circle(im, center_list, diameter_list)
            for center, diameter in zip(center_list, diameter_list):
+               diameter_corrected = correct_diameter( center, diameter )
                df = pd.concat([df, pd.DataFrame(
                    {'filename': [file], 'center_x': [center[0]], 'center_y': [center[1]], 'diameter': [diameter],'module':[module]})])
    return df
@@ -309,10 +362,16 @@ def get_glue_dot_pos(df_py=None,path_py=None):
     df = df_py.loc[(df_py["diameter"]-270).abs()<100]
     group = df.groupby("filename").apply(get_dot_pos_from,include_groups=False).to_numpy()
     df['position']=group
+    print(df)
     return df
 
+def correct_pos_after(df):
+    df["corrected_diameter"] = df.apply(lambda x: correct_diameter((x["center_x"], x["center_y"]), x["diameter"]),
+                                        axis = 1)
+    #df = find_pos_pic(df)
+    return df
 if __name__=="__main__":
-   dir_path = "/local/home/mp274748/Documents/glue_analysis/data/BDPT_v2/drive-download-20240407T212046Z-001/"
+   """dir_path = "/local/home/mp274748/Documents/glue_analysis/data/BDPT_v2/drive-download-20240407T212046Z-001/"
    #post_analysis_dir(dir_path)
    path_py = dir_path + "analysis_2.csv"
    path_cam = dir_path + glob.glob("*.txt",root_dir = "/local/home/mp274748/Documents/glue_analysis/data/BDPT_v2/drive-download-20240407T212046Z-001/")[0]
@@ -320,6 +379,22 @@ if __name__=="__main__":
    df = get_glue_dot_pos(df)
    df.sort_values("filename").to_csv(path_py,index = False)
    #continuous_analysis(dir_path)
-   #df = pd.read_csv(save_path)
+   #df = pd.read_csv(save_path)"""
+   """post_analysis_dir("/local/home/mp274748/Documents/data/Glue/240716_heaters")
+   df = pd.read_csv("/local/home/mp274748/Documents/data/Glue/240716_heaters/analysis_2.csv")
+   df = get_glue_dot_pos(df)
+   df = correct_pos_after(df)
+
+   df.to_csv("/local/home/mp274748/Documents/data/Glue/240716_heaters/analysis_2.csv",index = None)"""
+   df = pd.read_csv("/local/home/mp274748/Documents/data/Glue/test.csv")
+   df["filename"]= df["filename"].apply(lambda x : x.split("/")[-1])
+
+
+   group = df.groupby("filename").apply(get_dot_pos_from, include_groups = False).to_numpy()
+   df['position'] = group
+
+   df = correct_pos_after(df)
+   df.to_csv("/local/home/mp274748/Documents/data/Glue/240716_heaters/test_c.csv", index = None)
+
 
 

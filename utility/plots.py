@@ -9,12 +9,16 @@ import json
 import pickle
 import io
 import matplotlib.gridspec as gridspec
+from matplotlib.patches import StepPatch
 plot_parameters = ['x', 'y', 'fmt', 'color', 'marker', 'markersize',
+                   'linestyle', 'linewidth', 'label', 'alpha', 'zorder','lw','ls']
+StepPatch_parameters = ['x', 'y', 'fmt', 'color', 'marker', 'markersize',
                    'linestyle', 'linewidth', 'label', 'alpha', 'zorder','lw','ls']
 dict_annot = dict(xycoords = 'data', xytext = (50, 50), textcoords = 'offset pixels', ha = "center", va = "center",
                   bbox = dict(boxstyle = "round", fc = "1."),
                   arrowprops = dict(arrowstyle = "->", connectionstyle = "angle3,angleA=0,angleB=90"), size = 10,
                   draggable = True)
+
 def make_format(current, other):
     # current and other are axes
     def format_coord(x, y):
@@ -28,7 +32,6 @@ def make_format(current, other):
         return ('Up: {:<40}    Down: {:<}'
                 .format(*['({:.2f}, {:.2f})'.format(x, y) for x,y in coords]))
     return format_coord
-
 def bigger_plot():
     import matplotlib.pylab as pylab
 
@@ -76,6 +79,8 @@ def valid_args(kwargs, function):
     valid_parameters = [param for param in parameters if parameters[param].default != inspect.Parameter.empty]
     if function is plt.plot :
         valid_parameters = plot_parameters
+    if function is StepPatch:
+        valid_parameters = StepPatch_parameters
     valid_args = {key: value for key, value in kwargs.items() if key in valid_parameters}
     return valid_args
 
@@ -86,9 +91,9 @@ def get_values_in_kwargs(key, kwargs, init = None):
 
 def get_bins(min, max, nbin = None, wbin = None):
     if wbin:
-        return np.arange(min - wbin, max + wbin, wbin)
+        return np.arange(min - wbin, max + 2*wbin, wbin)
     elif nbin:
-        wbin = (max - min) / nbin
+        wbin = (max - min) / nbin +1
         return get_bins(min, max, wbin = wbin)
     else:
         return 'auto'
@@ -115,7 +120,7 @@ def create_sliders(ax, orientation, list_arg):
             adjust_axis_parameters(ax, y0 = ax.get_position().y0 - .05 + 0.08 * len(list_arg))
     if orientation == 'horizontal':
         for i, args in enumerate(list_arg):
-            ax_slider = ax.inset_axes([1.1 + 0.1 * i, 0, 0.08, 1], facecolor = 'lightgoldenrodyellow')
+            ax_slider = ax.inset_axes([1.1 + 0.3 * i, 0, 0.08, 1], facecolor = 'lightgoldenrodyellow')
             slider = Slider(ax_slider, orientation = 'vertical', **args)
             sliders.append(slider)
         x1 = ax.get_position().x1
@@ -202,17 +207,22 @@ def show():
 
 class slidded_bin_histogram:
     def __init__(self, data, nbin = None, wbin = None, sel_nbin = True, sel_wbin = True, orientation = 'vertical',
-                 plot_error=False,unit="ADU",**kwargs):
+                 plot_error=False,unit="ADU",x_range = None, fill = False,y_label=True,**kwargs):
         self.fig, self.ax = plt.subplots() if 'ax' not in kwargs else (kwargs['ax'].get_figure(), kwargs['ax'])
         self.data = data
+        self.y_label = y_label
         self.max_data, self.min_data = np.max(self.data), np.min(self.data)
+        if x_range is not None:
+            self.max_data, self.min_data = x_range[1], x_range[0]
         bins = get_bins(self.min_data, self.max_data, nbin = nbin, wbin = wbin)
+        self.x_range = x_range
         self.kwargs_hist = valid_args(kwargs, np.histogram)
-        self.kwargs_plot = {'linewidth' : .5, 'ds': 'steps-mid'}
+        step = 'steps-mid' if orientation == 'vertical'else 'steps-pre'
+        self.kwargs_plot = {'linewidth' : .5, 'ds': step}
         self.kwargs_plot.update(valid_args(kwargs, plt.plot))
         capsize = 1e-5 if "capsize" not in kwargs else kwargs["capsize"]
-        self.histogram, bin_edges = np.histogram(self.data, bins, **self.kwargs_hist)
-        self.bin_center = (bin_edges[:-1] + bin_edges[1:]) / 2
+        self.histogram, self.bin_edges = np.histogram(self.data, bins, **self.kwargs_hist)
+        self.bin_center = ( self.bin_edges[:-1] +  self.bin_edges[1:]) / 2
         self.sel_nbin, self.sel_wbin = sel_nbin, sel_wbin
         self.orientation = orientation
         self.slider_orientation = 'vertical' if orientation == 'horizontal' else 'horizontal'
@@ -220,9 +230,9 @@ class slidded_bin_histogram:
         self.n_max = get_values_in_kwargs('n_max', kwargs, len(self.data))
         self.w_min = get_values_in_kwargs('w_min', kwargs, (self.max_data - self.min_data) / self.n_max)
         self.w_max = get_values_in_kwargs('w_max', kwargs, (self.max_data - self.min_data) / self.n_min)
-        self.nbin, self.wbin = len(self.histogram), float(bin_edges[1] - bin_edges[0])
-        w_slider_arg = {'label': 'Bins \n width', 'valmin': self.w_min, 'valmax': self.w_max, 'valinit': self.wbin,'valfmt':'%.2e'}
-        n_slider_arg = {'label': 'Number \nof\n bins', 'valmin': self.n_min, 'valmax': self.n_max, 'valinit': self.nbin,
+        self.nbin, self.wbin = len(self.histogram), float(self.bin_edges[1] - self.bin_edges[0])
+        w_slider_arg = {'label': '$w_{bin}$', 'valmin': self.w_min, 'valmax': self.w_max, 'valinit': self.wbin,'valfmt':'%.1e'}
+        n_slider_arg = {'label': '$n_{bin}$', 'valmin': self.n_min, 'valmax': self.n_max, 'valinit': self.nbin,
                         'valstep': 1}
         arg_list = []
         if sel_nbin:
@@ -247,6 +257,16 @@ class slidded_bin_histogram:
             self.slider_nbin.on_changed(self.update_nbin)
         if self.sel_wbin:
             self.slider_wbin.on_changed(self.update_wbin)
+        self.fill = fill
+        if fill:
+            self.patch = StepPatch(values = self.histogram,
+                      edges =self.bin_edges,
+                      label = ('Patch derived underlying object\n'
+                               'with default edge/facecolor behaviour'),
+                      orientation = self.orientation,**valid_args(kwargs, StepPatch))
+
+            self.ax.add_patch(self.patch)
+        self.update_xy()
 
 
     def update_data(self, data):
@@ -266,11 +286,14 @@ class slidded_bin_histogram:
 
     def add_fit_on_histo(self, type="gaussian", p_guess=None, region = (-np.inf,np.inf,-np.inf,np.inf),
                          bounds = (-np.inf, np.inf), usesigma=True, pos_label = 2614, **kwargs):
-        color = self.errorbars.lines[0].get_c()
+        if 'color' not in kwargs:
+            color = self.errorbars.lines[0].get_c()
+        else :
+            color = kwargs.pop("color")
         self.fit_on_hist.append(fitting_object(self.ax,p_guess=p_guess,region=region,type=type,bounds = bounds,
                                                usesigma=usesigma,annot = True ,color=color))
         x_pos = [pos_label]
-        self.annotations_fit.add_data(texts = ["parameters:"], ys = get_hist_pos(self, x_pos), xs = x_pos)
+        self.annotations_fit.add_data(texts = [""], ys = get_hist_pos(self, x_pos), xs = x_pos)
         dict_annot.update(kwargs)
         self.annotations_fit.set_kwargs(color=color,**dict_annot)
         self.update_fit()
@@ -314,13 +337,19 @@ class slidded_bin_histogram:
             if len(self.annotations_on_hist.annotations) != 0 :
                 self.annotations_on_hist.set_data(ys = get_hist_pos(self, self.annotations_on_hist.xys[:,0]))
         else:
-            self.histoline.set_ydata(self.bin_center)
-            self.histoline.set_xdata(self.histogram)
-            self.dots_on_histo.set_xdata(get_hist_pos(self, self.dots_on_histo.ydata))
-            if self.annotations_on_hist is not None:
+            self.error = np.sqrt(self.histogram) if self.plot_error else 0
+            set_data_errorbars(self.errorbars, self.histogram, self.bin_center-self.wbin/2,
+                               self.error)
+            self.dots_on_histo.set_ydata(get_hist_pos(self, self.dots_on_histo.get_ydata()))
+            if len(self.annotations_on_hist.annotations) != 0 :
                 self.annotations_on_hist.set_data(xs = get_hist_pos(self, self.annotations_on_hist.xys[:,1]))
+        if self.fill :
+            self.patch.set_data(values=self.histogram,
+                       edges = self.bin_edges)
+
         self.update_fit()
-        self.ax.set_ylabel("Number of counts / {:.2f} ".format(self.wbin)+ self.unit)
+        if self.y_label:
+            self.ax.set_ylabel("Number of counts / {:.2f} ".format(self.wbin)+ self.unit)
     def update_fit(self):
         xys = []
         texts = []
@@ -330,21 +359,25 @@ class slidded_bin_histogram:
             x = xy[:, 0]
             y = xy[:, 1]
             fit.update(x[y > 0], y[y > 0], self.data)
-            text = "fit param: \n" + "\n ".join("{}: {}".format(name_parm, unc.ufloat(value, uncertainty))
-                                                for name_parm, value, uncertainty in zip(fit.name_parms, fit.p_opt,fit.pcov))
-            x_t = fit.p_opt[0]
+            #text = "\n ".join("{}: {}".format(name_parm, unc.ufloat(value, uncertainty))
+            #                                    for name_parm, value, uncertainty in zip(fit.name_parms, fit.p_opt,fit.pcov))
+
+            #text = "$\sigma$ : {}".format(unc.ufloat(fit.p_opt[-3], fit.pcov[-3]))
+            #text = "$ \\tau $ : {}".format(unc.ufloat(fit.p_opt[1], fit.pcov[1]))
+            text = "$x_{{max}}$ : {}".format(unc.ufloat(fit.p_opt[1], fit.pcov[1]))
+            x_t = fit.p_opt[1]
             y_t = fit.function(x_t,*fit.p_opt)
             xys.append((x_t,y_t))
             texts.append(text)
         self.annotations_fit.set_data(texts=texts,xys=xys)
 
     def update_nbin(self, nbin):
-        for histogram in self.connected_histograms:
-            histogram.update_nbin(nbin)
         bins = get_bins(self.min_data, self.max_data, nbin = nbin)
-        self.histogram, bin_edges = np.histogram(self.data, bins, **self.kwargs_hist)
-        self.bin_center = (bin_edges[:-1] + bin_edges[1:]) / 2
-        self.wbin = float(bin_edges[1] - bin_edges[0])
+        for histogram in self.connected_histograms:
+            histogram.update_bins(bins)
+        self.histogram, self.bin_edges = np.histogram(self.data, bins, **self.kwargs_hist)
+        self.bin_center = (self.bin_edges[:-1] + self.bin_edges[1:]) / 2
+        self.wbin = float(self.bin_edges[1] - self.bin_edges[0])
         self.update_xy()
         self.ax.relim()
         self.ax.autoscale_view()
@@ -357,12 +390,12 @@ class slidded_bin_histogram:
             self.fig.canvas.draw()
 
     def update_wbin(self, wbin):
-        for histogram in self.connected_histograms:
-            histogram.update_wbin(wbin)
         self.wbin = wbin
         bins = get_bins(self.min_data, self.max_data, wbin = wbin)
-        self.histogram, bin_edges = np.histogram(self.data, bins, **self.kwargs_hist)
-        self.bin_center = (bin_edges[:-1] + bin_edges[1:]) / 2
+        for histogram in self.connected_histograms:
+            histogram.update_bins(bins)
+        self.histogram, self.bin_edges = np.histogram(self.data, bins, **self.kwargs_hist)
+        self.bin_center = (self.bin_edges[:-1] + self.bin_edges[1:]) / 2
         self.update_xy()
         self.ax.relim()
         self.ax.autoscale_view()
@@ -374,7 +407,21 @@ class slidded_bin_histogram:
             self.slider_nbin.eventson = True
         else:
             self.fig.canvas.draw()
-
+    def update_bins(self,bins):
+        self.wbin = bins[1]-bins[0]
+        self.histogram, self.bin_edges = np.histogram(self.data, bins, **self.kwargs_hist)
+        self.bin_center = (self.bin_edges[:-1] + self.bin_edges[1:]) / 2
+        self.update_xy()
+        self.ax.relim()
+        self.ax.autoscale_view()
+        self.nbin = len(self.histogram)
+        if self.sel_nbin:
+            self.slider_nbin.eventson = False
+            self.slider_nbin.set_val(self.nbin)
+            self.fig.canvas.draw()
+            self.slider_nbin.eventson = True
+        else:
+            self.fig.canvas.draw()
     def connect_histograms(self, histogram):
         self.connected_histograms.append(histogram)
 
@@ -399,6 +446,15 @@ class fitting_object:
         self.name_parms =list(parameters.keys())[1:]
         self.bounds = bounds
         self.usesigma = usesigma
+
+    def set_region(self,region):
+        region = list(region)
+        while len(region)<4:
+            if len(region)%2==1:
+                region.append(np.inf)
+            else :
+                region.append(-np.inf)
+        self.region = region
     def update(self,x ,y, data):
         sel_data = data[(data>self.region[0]) & (data<self.region[1])]
         mask = (x>self.region[0]) & (x<self.region[1]) & (y > self.region[2]) & (y < self.region[3])
@@ -414,6 +470,7 @@ class fitting_object:
             self.p_opt, self.pcov = list(p_opt),list(np.sqrt(np.diag(pcov)))
         except RuntimeError :
             self.p_opt = self.p_guess
+            self.pcov  = np.zeros_like(self.p_guess)
             print("fit error")
         self.plot_fit.set_xdata(sel_x)
         self.plot_fit.set_ydata(self.function(sel_x,*self.p_opt))

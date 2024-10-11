@@ -8,11 +8,11 @@ import numpy as np
 import pandas as pd
 # Set the locale to French
 locale.setlocale(locale.LC_TIME, 'fr_FR.UTF-8')
-path_img = "/local/home/mp274748/Documents/glue_analysis/data/BDPT_v2/drive-download-20240407T212046Z-001"
+path_img = "/local/home/mp274748/Documents/glue_analysis/data/BDPT_v2/drive-download-20240407T215728Z-001"
 from PIL import Image, ImageTk
 import tksheet
-#df = pd.read_csv("/local/home/mp274748/Documents/glue_analysis/data/BDPT_v2/drive-download-20240407T215728Z-001/analysis_2.csv")
-df = pd.read_csv("/local/home/mp274748/Documents/glue_analysis/data/BDPT_v2/drive-download-20240407T212046Z-001/analysis_2.csv")
+df = pd.read_csv("/local/home/mp274748/Documents/glue_analysis/data/BDPT_v2/drive-download-20240407T215728Z-001/analysis_2.csv")
+#df = pd.read_csv("/local/home/mp274748/Documents/glue_analysis/data/BDPT_v2/drive-download-20240407T212046Z-001/analysis_2.csv")
 
 sorting_order = { 'br': 0, 'bl': 1,'m': 2, 'tr': 3, 'tl': 4}
 sorting_key = lambda x: sorting_order.get(x, float('inf'))
