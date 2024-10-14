@@ -62,7 +62,7 @@ def get_chip(path_ref,crop):
     return crop,center_chip
 
 
-def get_dots(path,path_ref,crop=None, blur=100, acceptance=0.4):
+def get_dots(path, path_ref, crop=None, blur=100, threshold=0.4):
     imag = cv2.imread(path)
     if crop is None:
         crop = [0,imag.shape[0],0,imag.shape[1]]
@@ -74,7 +74,7 @@ def get_dots(path,path_ref,crop=None, blur=100, acceptance=0.4):
     im_diff = np.abs(im_ref-im)
     im_uniform = scipy.ndimage.uniform_filter(im_diff,blur)
     im_masked = np.copy(im_uniform)
-    mask = im_masked<np.max(im_masked)*acceptance#6
+    mask = im_masked < np.max(im_masked) * threshold#6
     im_masked[mask] = 0
     image_array_normalized = cv2.normalize(im_masked, None, 0, 255, cv2.NORM_MINMAX)
     image_array_normalized = image_array_normalized.astype(np.uint8)
@@ -118,8 +118,31 @@ def get_dots(path,path_ref,crop=None, blur=100, acceptance=0.4):
                     error_list.append(error)
                     minmaxes.append(minmax)
                     cv2.circle(imag, center, int(equi_diameter), (255,0,0), 10)
-    return (diameter_list,center_corrected_list,error_list,minmaxes,
+    return (diameter_list,center_corrected_list,error_list,minmaxes,crop,
             [convert_arr_2_img(im_diff),convert_arr_2_img(im_uniform),convert_arr_2_img(im_thr),convert_arr_2_img(imag)])
+
+class MyScrollableCheckboxFrame(Ctk.CTkScrollableFrame):
+    def __init__(self, master, title, values, function):
+        super().__init__(master, label_text=title)
+        self.grid_columnconfigure(0, weight=1)
+        self.values = values
+        self.checkboxes = []
+        self.create_labels(self.values)
+        self.function = function
+    def create_labels(self,values):
+        self.values = values
+        for widget in self.winfo_children():
+            widget.destroy()
+        for label in values:
+            text_label = Ctk.CTkLabel(self, text=label, text_color="blue", cursor="hand2")
+            text_label.pack(pady=1)
+            text_label.bind("<Button-1>", lambda e, text=label: self.on_click(text))
+    def add_label(self,label):
+        text_label = Ctk.CTkLabel(self, text = label, text_color = "blue", cursor = "hand2")
+        text_label.pack(pady = 1)
+        text_label.bind("<Button-1>", lambda e, text = label: self.on_click(text))
+    def on_click(self, text):
+        self.function(text)
 
 
 class ImageSelector:
@@ -127,8 +150,15 @@ class ImageSelector:
 
         self.root = root
         self.root.title("Image Selector")
+        self.dir = "/media/mp274748/Transcend/data/Glue_Files/241009_101103/CAM1"
         #self.root.geometry("320x220")
         row = 0
+        self.dir_label = Ctk.CTkLabel(self.root, text = self.dir , text_color = "blue")
+        self.dir_label.grid(row=row, column=0,columnspan = 4)
+        self.dir_label.bind("<Button-1>", lambda x:self.select_directory())
+
+        row+=1
+
         self.canvas1 = Ctk.CTkCanvas(self.root,width = 250, height = 200, background = root["bg"])
         self.canvas1.grid(row=row, column=0, columnspan = 2, padx=0, pady=0)
 
@@ -166,26 +196,22 @@ class ImageSelector:
 
         row+=1
 
-
-        self.chip_var = Ctk.StringVar()
         self.chip_combobox = Ctk.CTkComboBox(root, width = 80,
                                           values = ["NTD", "heater"])
         self.chip_combobox.grid(row = row, column = 2, padx = 10, pady = 0)
         self.chip_combobox.set("NTD")
 
-        self.blur_var = Ctk.StringVar()
         self.blur_combobox = Ctk.CTkComboBox(root, width = 80,
-                                          values = ["{:.0f}".format(i*10) for i in range(11)])
+                                          values = ["{:.0f}".format(i*10) for i in range(11)],
+                                                  command = lambda x: self.analyse())
         self.blur_combobox.grid(row = row, column = 3, padx = 10, pady = 0)
-        self.blur_combobox.bind("<<ComboboxSelected>>", command = lambda x: self.analyse())
         self.blur_combobox.set("0")
 
-        self.acceptance_var = tk.StringVar()
-        self.acceptance_combobox = Ctk.CTkComboBox(root, width = 80,
-                                          values = ["{:.1f}".format(i * 0.1) for i in range(1,11)])
-        self.acceptance_combobox.grid(row = row, column = 4, padx = 10, pady = 0)
-        self.acceptance_combobox.bind("<<ComboboxSelected>>", command = lambda x: self.analyse())
-        self.acceptance_combobox.set("0.4")
+        self.threshold_combobox = Ctk.CTkComboBox(root, width = 80,
+                                                  values = ["{:.1f}".format(i * 0.1) for i in range(1,11)],
+                                                  command = lambda x: self.analyse())
+        self.threshold_combobox.grid(row = row, column = 4, padx = 10, pady = 0)
+        self.threshold_combobox.set("0.4")
         row +=1
         self.canvas_diff = Ctk.CTkCanvas(self.root,width = 230, height = 230, background = root["bg"])
         self.canvas_diff.grid(row = row, column = 0,columnspan=2, padx = 10, pady = 10)
@@ -212,6 +238,9 @@ class ImageSelector:
         self.sheet.headers(["radius","X","Y","fit error","(max-min)/max"], )
         self.sheet.change_theme("dark")
         self.sheet.table_align("c")
+        row+=1
+        save_btn = Ctk.CTkButton(self.root, text = "Save", command = self.save)
+        save_btn.grid(row = row, column = 1, rowspan = 2, padx = 0, pady = 0)
         self.image1 = None
         self.image2 = None
         self.im_diff = None
@@ -220,7 +249,15 @@ class ImageSelector:
         self.im_circle = None
         self.path1 = None
         self.path2 = None
-        self.df = None
+        self.df = pd.DataFrame()
+
+        self.data = np.array([])
+        self.crop = [600,2610, 1370,3520]
+        self.History = MyScrollableCheckboxFrame(self.root, title = "History", values = [],
+                                                 function = self.history_sel)
+        self.History.grid(row = 0, column = 10, rowspan=10, padx = (0, 10), pady = (10, 0), sticky = "nse")
+        self.load_df()
+
 
     def draw_axes(self,length=40):
         start = 4
@@ -252,16 +289,33 @@ class ImageSelector:
         image = Image.fromarray(image)  # Convert cv2 image (numpy array) to PIL Image
         return ImageTk.PhotoImage(image)
 
-    def load_df(self,dir=None):
+    def load_df(self):
+        dir = self.dir
         df = pd.DataFrame({"file":os.listdir(dir)})
         df = df[df["file"].str[-4:]==".bmp"]
         df["num"] = df["file"].str[-14:-4].astype('int')
         df["file_path"] = dir + "/" + df["file"]
+        df = df.set_index("file")
+        if os.path.isfile(dir+"/"+"data.csv"):
+            df_saved = pd.read_csv(dir+"/"+"data.csv")
+            df_saved = df_saved.set_index("file")
+            df.loc[df_saved.index,df_saved.columns] = df_saved
         self.df = df
+        self.update_history()
+
+    def update_history(self):
+        df = self.df.loc[self.df["radius"]>0]
+        df.sort_values(by=['num'])
+        self.History.create_labels(df.index)
+
+    def select_directory(self):
+        self.dir = filedialog.askdirectory(initialdir="/media/mp274748/Transcend/data/Glue_Files/241009_101103/CAM1")
+        self.dir_label.configure(text=self.dir)
 
 
-    def select_image1(self):
-        file_path = filedialog.askopenfilename(initialdir="/media/mp274748/Transcend/data/Glue_Files/241009_101103/CAM1"
+    def select_image1(self,file_path=None):
+        if file_path is None :
+            file_path = filedialog.askopenfilename(initialdir="/media/mp274748/Transcend/data/Glue_Files/241009_101103/CAM1"
                                                ,filetypes=[("Image files", "*.bmp")])
         if file_path:
             self.filename1.configure(text=os.path.basename(file_path))
@@ -272,7 +326,7 @@ class ImageSelector:
             self.path1 = file_path
             self.image1 = ImageTk.PhotoImage(img)  # Convert to ImageTk for display in Tkinter
             self.canvas1.create_image(0, 0, anchor=tk.NW, image=self.image1)
-            self.load_df(os.path.dirname(file_path))
+            self.load_df()
             num = self.df.loc[self.df["file_path"]==self.path1,"num"].values[0]
             prev_path = self.df.loc[self.df["num"]==num-1,"file_path"]
             if len(prev_path)>0:
@@ -282,7 +336,7 @@ class ImageSelector:
 
     def select_image2(self,file_path=None):
         if file_path is None :
-            file_path = filedialog.askopenfilename(initialdir="/media/mp274748/Transcend/data/Glue_Files/241009_101103/CAM1"
+            file_path = filedialog.askopenfilename(initialdir=self.dir
                                                ,filetypes=[("Image files", "*.bmp")])
         if file_path:
             self.filename2.configure(text = os.path.basename(file_path))
@@ -297,9 +351,10 @@ class ImageSelector:
     def analyse(self):
         crop = [600,2610, 1370,3520] if self.chip_combobox.get() == "NTD" else [600, 2010, 1370, 2820]
         blur = int(self.blur_combobox.get())
-        acceptance = float(self.acceptance_combobox.get())
-        diameter_list,center_list,error_list,minmaxes,list_img = get_dots(self.path1, self.path2,crop = crop, blur=blur,
-                                                                          acceptance = acceptance)
+        threshold = float(self.threshold_combobox.get())
+        diameter_list,center_list,error_list,minmaxes,crop,list_img = get_dots(self.path1, self.path2, crop = crop, blur=blur,
+                                                                          threshold = threshold)
+        self.crop = crop
         center_list = np.array(center_list)
         im_diff, im_uniform, im_thr, imag = list_img
         self.im_diff = self.plot_image(im_diff)
@@ -310,16 +365,29 @@ class ImageSelector:
         self.canvas_thr.create_image(0, 0, anchor=tk.NW, image=self.im_thr)
         self.im_circle =self.plot_image(imag)
         self.canvas_circle.create_image(0, 0, anchor=tk.NW, image=self.im_circle)
-        data = np.array([diameter_list,center_list[:,0],center_list[:,1],error_list,minmaxes]).T
+        self.data = np.array([diameter_list,center_list[:,0],center_list[:,1],error_list,minmaxes]).T
         ts = [0,0,0,0,2]
-        self.sheet.set_sheet_data([[f"{val:.{t}f}" for val,t in zip(arr,ts)]for arr in data])
-        for i,arr in enumerate(data):
-            print(arr[3])
+        self.sheet.set_sheet_data([[f"{val:.{t}f}" for val,t in zip(arr,ts)]for arr in self.data])
+        for i,arr in enumerate(self.data):
             if arr[3]>50:
                 self.sheet[i, 3].bg = "red"
             if arr[4]>0.2:
                 self.sheet[i, 4].bg = "red"
+    def history_sel(self,x):
+        df = self.df.loc[x]
+        self.select_image1(df["file_path"])
+        self.select_image2(self.dir + "/" + df["Reference_image"])
+        self.threshold_combobox.set("{:.1f}".format(df["threshold"]))
+        self.blur_combobox.set("{:.0f}".format(df["blur"]))
+        self.chip_combobox.set(df["Glue"])
 
+    def save(self):
+        self.df.loc[os.path.basename(self.path1),["radius","X","Y","fit error","(max-min)/max"]]=self.data[0]
+        self.df.loc[os.path.basename(self.path1),["Glue","blur","threshold"]] = [self.chip_combobox.get(),self.blur_combobox.get(), self.threshold_combobox.get()]
+        self.df.loc[os.path.basename(self.path1), "Reference_image"] = os.path.basename(self.path2)
+        self.df.loc[os.path.basename(self.path1), ["crop_top","crop_bottom","crop_left","crop_right"]] = self.crop
+        self.df.to_csv(os.path.dirname(self.path1)+"/"+"data.csv")
+        self.update_history()
 
 
 if __name__ == "__main__":
