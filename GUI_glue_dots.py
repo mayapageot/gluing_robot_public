@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import filedialog, ttk
+from customtkinter import filedialog
 from PIL import Image, ImageTk
 import tksheet
 import cv2
@@ -7,6 +7,7 @@ import os
 import pandas as pd
 import numpy as np
 import scipy
+import customtkinter as Ctk
 def convert_arr_2_img(arr):
     image_array_normalized = cv2.normalize(arr, None, 0, 255, cv2.NORM_MINMAX)
     image_array_normalized = image_array_normalized.astype(np.uint8)
@@ -14,6 +15,33 @@ def convert_arr_2_img(arr):
         return cv2.cvtColor(image_array_normalized,cv2.COLOR_GRAY2RGB)
     else :
         return image_array_normalized
+def resize_image(img, new_width, new_height):
+    h, w = img.shape[:2]
+
+    # Calculate aspect ratios
+    img_ratio = w / h
+    target_ratio = new_width / new_height
+
+    if target_ratio > img_ratio:
+        # If target aspect ratio is wider, resize based on width
+        new_w = new_width
+        new_h = int(new_width / img_ratio)
+    else:
+        # If target aspect ratio is taller, resize based on height
+        new_h = new_height
+        new_w = int(new_height * img_ratio)
+
+    # Resize the image
+    resized_img = cv2.resize(img, (new_w, new_h), interpolation = cv2.INTER_AREA)
+
+    # Calculate coordinates to crop the center
+    x_start = (new_w - new_width) // 2
+    y_start = (new_h - new_height) // 2
+
+    # Crop the center of the image
+    cropped_img = resized_img[y_start:y_start + new_height, x_start:x_start + new_width]
+
+    return cropped_img
 
 
 def get_chip(path_ref,crop):
@@ -101,86 +129,89 @@ class ImageSelector:
         self.root.title("Image Selector")
         #self.root.geometry("320x220")
         row = 0
-        self.canvas1 = tk.Canvas(self.root,width = 250, height = 200)
+        self.canvas1 = Ctk.CTkCanvas(self.root,width = 250, height = 200, background = root["bg"])
         self.canvas1.grid(row=row, column=0, columnspan = 2, padx=0, pady=0)
 
-        self.canvas2 = tk.Canvas(self.root,width = 250, height = 200)
+        self.canvas2 = Ctk.CTkCanvas(self.root,width = 250, height = 200, background = root["bg"])
         self.canvas2.grid(row=row, column = 2,columnspan=3, padx=0, pady=0)
         row+=1
-        self.filename1 = tk.Label(self.root , text = "")
+        self.filename1 = Ctk.CTkLabel(self.root , text = "")
         self.filename1.grid(row=row, column = 0, columnspan = 2,padx=0, pady=0)
 
-        self.filename2 = tk.Label(self.root, text = "")
+        self.filename2 = Ctk.CTkLabel(self.root, text = "")
         self.filename2.grid(row = row, column = 2, columnspan = 3, padx = 0, pady = 0)
         row+=1
-        select_btn1 = tk.Button(self.root, text="Glue Dot", command=self.select_image1)
+        select_btn1 = Ctk.CTkButton(self.root, text="Glue Dot", command=self.select_image1)
         select_btn1.grid(row=row, column=0, columnspan = 2, padx=10, pady=10)
 
-        select_btn2 = tk.Button(self.root, text="Reference", command=self.select_image2)
+        select_btn2 = Ctk.CTkButton(self.root, text="Reference", command=self.select_image2)
         select_btn2.grid(row=row, column = 2,columnspan=3, padx=10, pady=10)
         row+=1
-        self.anaLabel = tk.Label(self.root, text = "")
-        self.anaLabel.grid(row = row, column = 1, padx = 0, pady = 0)
 
-        self.chipLabel = tk.Label(self.root, text = "Chip")
+        self.chipLabel = Ctk.CTkLabel(self.root, text = "Chip")
         self.chipLabel.grid(row = row, column = 2, padx = 0, pady = 0)
 
-        self.blurLabel = tk.Label(self.root, text = "Blur")
+        self.blurLabel = Ctk.CTkLabel(self.root, text = "Blur")
         self.blurLabel.grid(row = row, column = 3, padx = 0, pady = 0)
 
-        self.acceptanceLabel = tk.Label(self.root, text = "Threshold")
+        self.acceptanceLabel = Ctk.CTkLabel(self.root, text = "Threshold")
         self.acceptanceLabel.grid(row = row, column = 4, padx = 0, pady = 0)
 
-        self.canvas = tk.Canvas(self.root, width = 70, height = 70)
-        self.canvas.grid(row = row, column = 0,rowspan=2, padx = 0, pady = 0)
+        self.canvas_axes = Ctk.CTkCanvas(self.root, width = 70, height = 70, background = root["bg"],highlightthickness = 0)
+        self.canvas_axes.grid(row = row, column = 0,rowspan=2, padx = 0, pady = 0)
         self.draw_axes(70)
-        analyse_btn = tk.Button(self.root, text = "Analyse", command = self.analyse)
+
+        analyse_btn = Ctk.CTkButton(self.root, text = "Analyse", command = self.analyse)
         analyse_btn.grid(row = row, column = 1,rowspan=2, padx = 0, pady = 0)
 
         row+=1
 
 
-        self.chip_var = tk.StringVar()
-        self.chip_combobox = ttk.Combobox(root, textvariable = self.chip_var, width = 5,
+        self.chip_var = Ctk.StringVar()
+        self.chip_combobox = Ctk.CTkComboBox(root, width = 80,
                                           values = ["NTD", "heater"])
-        self.chip_combobox.grid(row = row, column = 2, padx = 0, pady = 0)
+        self.chip_combobox.grid(row = row, column = 2, padx = 10, pady = 0)
         self.chip_combobox.set("NTD")
 
-        self.blur_var = tk.StringVar()
-        self.blur_combobox = ttk.Combobox(root, textvariable = self.blur_var, width = 5,
+        self.blur_var = Ctk.StringVar()
+        self.blur_combobox = Ctk.CTkComboBox(root, width = 80,
                                           values = ["{:.0f}".format(i*10) for i in range(11)])
-        self.blur_combobox.grid(row = row, column = 3, padx = 0, pady = 0)
-        self.blur_combobox.bind("<<ComboboxSelected>>", func = lambda x: self.analyse())
+        self.blur_combobox.grid(row = row, column = 3, padx = 10, pady = 0)
+        self.blur_combobox.bind("<<ComboboxSelected>>", command = lambda x: self.analyse())
         self.blur_combobox.set("0")
 
         self.acceptance_var = tk.StringVar()
-        self.acceptance_combobox = ttk.Combobox(root, textvariable = self.acceptance_var, width = 5,
+        self.acceptance_combobox = Ctk.CTkComboBox(root, width = 80,
                                           values = ["{:.1f}".format(i * 0.1) for i in range(1,11)])
-        self.acceptance_combobox.grid(row = row, column = 4, padx = 0, pady = 0)
-        self.acceptance_combobox.bind("<<ComboboxSelected>>", func = lambda x: self.analyse())
+        self.acceptance_combobox.grid(row = row, column = 4, padx = 10, pady = 0)
+        self.acceptance_combobox.bind("<<ComboboxSelected>>", command = lambda x: self.analyse())
         self.acceptance_combobox.set("0.4")
         row +=1
-        self.canvas_diff =  tk.Canvas(self.root,width = 250, height = 250)
+        self.canvas_diff = Ctk.CTkCanvas(self.root,width = 230, height = 230, background = root["bg"])
         self.canvas_diff.grid(row = row, column = 0,columnspan=2, padx = 10, pady = 10)
 
-        self.canvas_uniform = tk.Canvas(self.root,width = 250, height = 250)
+        self.canvas_uniform = Ctk.CTkCanvas(self.root,width = 230, height = 230, background = root["bg"])
         self.canvas_uniform.grid(row = row, column = 2,columnspan=3, padx = 10, pady = 10)
         row+=1
-        self.canvas_thr = tk.Canvas(self.root,width = 250, height = 250)
+        self.canvas_thr = Ctk.CTkCanvas(self.root,width = 230, height = 230, background = root["bg"])
         self.canvas_thr.grid(row = row, column = 0,columnspan=2, padx = 10, pady = 10)
 
-        self.canvas_circle =  tk.Canvas(self.root,width = 250, height = 250)
+        self.canvas_circle = Ctk.CTkCanvas(self.root,width = 230, height = 230, background = root["bg"])
         self.canvas_circle.grid(row = row, column = 2,columnspan=3, padx = 10, pady = 10)
         row+=1
         self.sheet = tksheet.Sheet(root, column_width = 90, height = 40, width = 5 * 90+40,
                               show_x_scrollbar = False,show_y_scrollbar = False,row_index_width = 0,
                               header_font = ("Calibri", 8, "normal"),
                               index_font = ("Calibri", 9, "normal"))
+        ts = [0, 0, 0, 0, 2]
+        self.sheet.set_sheet_data([[f"{val:.{t}f}" for val, t in zip(arr, ts)] for arr in [[0,0,0,0,0]]])
         self.sheet.grid(row = row, column = 0, columnspan = 5, padx = 5, pady = 5)
         self.sheet.enable_bindings(("single_select", "row_select", "column_width_resize","arrowkeys",
                                "right_click_popup_menu", "rc_select", "rc_insert_row", "rc_delete_row",
                                "copy","cut","paste","delete", "undo","edit_cell"))
         self.sheet.headers(["radius","X","Y","fit error","(max-min)/max"], )
+        self.sheet.change_theme("dark")
+        self.sheet.table_align("c")
         self.image1 = None
         self.image2 = None
         self.im_diff = None
@@ -193,10 +224,10 @@ class ImageSelector:
 
     def draw_axes(self,length=40):
         start = 4
-        self.canvas.create_line(start, start, length-start, start, arrow=tk.LAST, width=2)
-        self.canvas.create_line(start, start, start,  length-start, arrow=tk.LAST, width=2)
-        self.canvas.create_text(length-4, start+10, text="X", font=("Arial", 1, "bold"))
-        self.canvas.create_text(start+10 ,length-4, text="Y", font=("Arial", 1, "bold"))
+        self.canvas_axes.create_line(start, start, length-start, start, arrow=tk.LAST, width=2, fill="white")
+        self.canvas_axes.create_line(start, start, start,  length-start, arrow=tk.LAST, width=2, fill="white")
+        self.canvas_axes.create_text(length-4, start+10, text="X", fill="white")
+        self.canvas_axes.create_text(start+10 ,length-4, text="Y", fill="white")
     def resize_with_aspect_ratio(self, img, max_size = (250, 250)):
         """Resize the image while keeping the aspect ratio."""
         if img.dtype != np.uint8:
@@ -216,7 +247,7 @@ class ImageSelector:
         return resized_img
 
     def plot_image(self, image):
-        image = self.resize_with_aspect_ratio(image)  # Resize the image using cv2  # Convert from BGR (OpenCV default) to RGB
+        image = resize_image(image, 230, 230)  # Resize the image using cv2  # Convert from BGR (OpenCV default) to RGB
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         image = Image.fromarray(image)  # Convert cv2 image (numpy array) to PIL Image
         return ImageTk.PhotoImage(image)
@@ -233,7 +264,7 @@ class ImageSelector:
         file_path = filedialog.askopenfilename(initialdir="/media/mp274748/Transcend/data/Glue_Files/241009_101103/CAM1"
                                                ,filetypes=[("Image files", "*.bmp")])
         if file_path:
-            self.filename1.config(text=os.path.basename(file_path))
+            self.filename1.configure(text=os.path.basename(file_path))
             img = cv2.imread(file_path)  # Read the image using cv2
             img = self.resize_with_aspect_ratio(img)  # Resize the image using cv2
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)  # Convert from BGR (OpenCV default) to RGB
@@ -254,7 +285,7 @@ class ImageSelector:
             file_path = filedialog.askopenfilename(initialdir="/media/mp274748/Transcend/data/Glue_Files/241009_101103/CAM1"
                                                ,filetypes=[("Image files", "*.bmp")])
         if file_path:
-            self.filename2.config(text = os.path.basename(file_path))
+            self.filename2.configure(text = os.path.basename(file_path))
             img = cv2.imread(file_path)  # Read the image using cv2
             img = self.resize_with_aspect_ratio(img)  # Resize the image using cv2
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)  # Convert from BGR (OpenCV default) to RGB
@@ -275,7 +306,7 @@ class ImageSelector:
         self.canvas_diff.create_image(0, 0, anchor=tk.NW, image=self.im_diff)
         self.im_uniform =self.plot_image(im_uniform)
         self.canvas_uniform.create_image(0, 0, anchor=tk.NW, image=self.im_uniform)
-        self.im_thr =self.plot_image(im_thr)
+        self.im_thr =self.plot_image(255-im_thr)
         self.canvas_thr.create_image(0, 0, anchor=tk.NW, image=self.im_thr)
         self.im_circle =self.plot_image(imag)
         self.canvas_circle.create_image(0, 0, anchor=tk.NW, image=self.im_circle)
@@ -292,6 +323,6 @@ class ImageSelector:
 
 
 if __name__ == "__main__":
-    root = tk.Tk()
+    root = Ctk.CTk()
     app = ImageSelector(root)
     root.mainloop()
