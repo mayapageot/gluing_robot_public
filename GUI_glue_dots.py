@@ -294,28 +294,30 @@ class ImageSelector:
         df = pd.DataFrame({"file":os.listdir(dir)})
         df = df[df["file"].str[-4:]==".bmp"]
         df["num"] = df["file"].str[-14:-4].astype('int')
-        df["file_path"] = dir + "/" + df["file"]
+        df["file_path"] = df["file"].apply(lambda x: os.path.join(dir, str(x)))
+        df["radius"] = None
         df = df.set_index("file")
         if os.path.isfile(dir+"/"+"data.csv"):
             df_saved = pd.read_csv(dir+"/"+"data.csv")
             df_saved = df_saved.set_index("file")
             df.loc[df_saved.index,df_saved.columns] = df_saved
         self.df = df
+        print(self.df)
         self.update_history()
 
     def update_history(self):
-        df = self.df.loc[self.df["radius"]>0]
+        df = self.df.loc[np.logical_not(self.df["radius"].isnull())]
         df.sort_values(by=['num'])
         self.History.create_labels(df.index)
 
     def select_directory(self):
-        self.dir = filedialog.askdirectory(initialdir="/media/mp274748/Transcend/data/Glue_Files/241009_101103/CAM1")
+        self.dir = filedialog.askdirectory(initialdir=self.dir)
         self.dir_label.configure(text=self.dir)
 
 
     def select_image1(self,file_path=None):
         if file_path is None :
-            file_path = filedialog.askopenfilename(initialdir="/media/mp274748/Transcend/data/Glue_Files/241009_101103/CAM1"
+            file_path = filedialog.askopenfilename(initialdir=self.dir
                                                ,filetypes=[("Image files", "*.bmp")])
         if file_path:
             self.filename1.configure(text=os.path.basename(file_path))
@@ -327,6 +329,8 @@ class ImageSelector:
             self.image1 = ImageTk.PhotoImage(img)  # Convert to ImageTk for display in Tkinter
             self.canvas1.create_image(0, 0, anchor=tk.NW, image=self.image1)
             self.load_df()
+            print(self.path1)
+            print(self.df["file_path"])
             num = self.df.loc[self.df["file_path"]==self.path1,"num"].values[0]
             prev_path = self.df.loc[self.df["num"]==num-1,"file_path"]
             if len(prev_path)>0:
@@ -376,7 +380,7 @@ class ImageSelector:
     def history_sel(self,x):
         df = self.df.loc[x]
         self.select_image1(df["file_path"])
-        self.select_image2(self.dir + "/" + df["Reference_image"])
+        self.select_image2(os.path.join(self.dir,df["Reference_image"]))
         self.threshold_combobox.set("{:.1f}".format(df["threshold"]))
         self.blur_combobox.set("{:.0f}".format(df["blur"]))
         self.chip_combobox.set(df["Glue"])
