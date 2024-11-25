@@ -7,6 +7,9 @@ import os
 import pandas as pd
 import numpy as np
 import scipy
+from skimage.transform import hough_circle, hough_circle_peaks
+from skimage.morphology import dilation, disk
+from skimage.feature import canny
 import customtkinter as Ctk
 def convert_arr_2_img(arr):
     image_array_normalized = cv2.normalize(arr, None, 0, 255, cv2.NORM_MINMAX)
@@ -62,64 +65,41 @@ def get_chip(path_ref,crop):
     return crop,center_chip
 
 
-def get_dots(path, path_ref, crop=None, blur=100, threshold=0.4):
+def get_dots(path, path_ref, crop=None, r_guess=400, n_dots=1, pxl_accuracy=5):
     imag = cv2.imread(path)
     if crop is None:
         crop = [0,imag.shape[0],0,imag.shape[1]]
     crop, center_chip = get_chip(path_ref,crop)
     imag=imag[crop[0]: crop[1], crop[2]: crop[3]]
-    im = np.array(cv2.cvtColor(imag, cv2.COLOR_BGR2GRAY),dtype = np.int32)
-    im_ref = np.array(cv2.cvtColor(cv2.imread(path_ref), cv2.COLOR_BGR2GRAY),dtype = np.int32)
-    im_ref=im_ref[crop[0]: crop[1], crop[2]: crop[3]]
-    im_diff = np.abs(im_ref-im)
-    im_uniform = scipy.ndimage.uniform_filter(im_diff,blur)
-    im_masked = np.copy(im_uniform)
-    mask = im_masked < np.max(im_masked) * threshold#6
-    im_masked[mask] = 0
-    image_array_normalized = cv2.normalize(im_masked, None, 0, 255, cv2.NORM_MINMAX)
-    image_array_normalized = image_array_normalized.astype(np.uint8)
-    im_thr = cv2.inRange(image_array_normalized, 0, 100)
-    contours, hierarchy = cv2.findContours(im_thr, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-    ellipse_list = []
-    center_list = []
-    center_corrected_list = []
-    diameter_list = []
-    error_list=[]
-    minmaxes = []
-    for cnt in contours:
-        adding = True
-        if len(cnt)>4:
+    im = np.array(cv2.cvtColor(imag, cv2.COLOR_BGR2GRAY), dtype = np.int32)
+    im_ref = np.array(cv2.cvtColor(cv2.imread(path_ref), cv2.COLOR_BGR2GRAY), dtype = np.int32)
+    im_ref = im_ref[crop[0]: crop[1], crop[2]: crop[3]]
+    im_diff = np.abs(im_ref - im)
+    image = cv2.normalize(im_diff, None, 0, 255, cv2.NORM_MINMAX)
+    edges = canny(image, sigma = 3, low_threshold = 10, high_threshold = 50)
+    edges_thick = dilation(edges, disk(10))
+    hough_radii = np.arange(r_guess-30, r_guess+30, pxl_accuracy)
+    hough_res = hough_circle(edges, hough_radii)
+    accums, cx, cy, radii = hough_circle_peaks(hough_res, hough_radii, total_num_peaks = n_dots)
+    for center_y, center_x, radius in zip(cy, cx, radii):
+        cv2.circle(imag, (center_x, center_y), int(radius), (255, 0, 0), 10)
+    return (radii,cx,cy,accums,crop,
+            [convert_arr_2_img(im_diff),convert_arr_2_img(edges_thick*255),convert_arr_2_img(imag)])
 
-            ellipse = cv2.fitEllipse(cnt)
-            if np.abs(ellipse[1][0]-ellipse[1][1])<100 and ellipse[1][0]>300:
-                ellipse_list.append(ellipse)
-                M = cv2.moments(cnt)
-                x0 , y0 = int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"])
-                center = (x0,y0)
-                area = cv2.contourArea(cnt)
-                equi_diameter = np.sqrt(4 * area / np.pi) / 2
-                x = cnt[:,:,0]
-                y = cnt[:,:,1]
-                radiuses_2 = (x-x0)**2 + (y-y0)**2
-                error = (np.mean(np.abs(radiuses_2 - equi_diameter**2)))**0.5
-                minmax =(np.max(radiuses_2) - np.min(radiuses_2)) / equi_diameter ** 2
-                for i, (c_b, mm_b) in enumerate(zip(center_list, minmaxes)):
-                    if ((x0 - c_b[0]) ** 2 + (y0 - c_b[1]) ** 2 < 2000):
-                        if mm_b>minmax:
-                            diameter_list.pop(i)
-                            center_list.pop(i)
-                            error_list.pop(i)
-                        else :
-                            adding = False
-                if adding and error <150:
-                    diameter_list.append(equi_diameter)
-                    center_list.append(center)
-                    center_corrected_list.append((x0 - center_chip[0], y0 - center_chip[1]))
-                    error_list.append(error)
-                    minmaxes.append(minmax)
-                    cv2.circle(imag, center, int(equi_diameter), (255,0,0), 10)
-    return (diameter_list,center_corrected_list,error_list,minmaxes,crop,
-            [convert_arr_2_img(im_diff),convert_arr_2_img(im_uniform),convert_arr_2_img(im_thr),convert_arr_2_img(imag)])
+def plot_dots(path, path_ref, crop, cy, cx, radii):
+    imag = cv2.imread(path)
+    imag = imag[crop[0]: crop[1], crop[2]: crop[3]]
+    im = np.array(cv2.cvtColor(imag, cv2.COLOR_BGR2GRAY), dtype = np.int32)
+    im_ref = np.array(cv2.cvtColor(cv2.imread(path_ref), cv2.COLOR_BGR2GRAY), dtype = np.int32)
+    im_ref = im_ref[crop[0]: crop[1], crop[2]: crop[3]]
+    im_diff = np.abs(im_ref - im)
+    image = cv2.normalize(im_diff, None, 0, 255, cv2.NORM_MINMAX)
+    edges = canny(image, sigma = 3, low_threshold = 10, high_threshold = 50)
+    edges_thick = dilation(edges, disk(10))
+    for center_y, center_x, radius in zip(cy, cx, radii):
+        cv2.circle(imag, (center_x, center_y), int(radius), (255, 0, 0), 10)
+    return [convert_arr_2_img(im_diff),convert_arr_2_img(edges_thick*255),convert_arr_2_img(imag)]
+
 
 class MyScrollableCheckboxFrame(Ctk.CTkScrollableFrame):
     def __init__(self, master, title, values, function):
@@ -150,12 +130,29 @@ class ImageSelector:
 
         self.root = root
         self.root.title("Image Selector")
-        self.dir = "/media/mp274748/Transcend/data/Glue_Files/241009_101103/CAM1"
+        self.dir = "/local/home/mp274748/Documents/data/Glue/241015_145732/CAM1"#"/media/mp274748/Transcend/data/Glue_Files/241015_145732/CAM1"
         #self.root.geometry("320x220")
         row = 0
+
         self.dir_label = Ctk.CTkLabel(self.root, text = self.dir , text_color = "blue")
         self.dir_label.grid(row=row, column=0,columnspan = 4)
         self.dir_label.bind("<Button-1>", lambda x:self.select_directory())
+
+        row+=1
+
+        self.Chip_label = Ctk.CTkLabel(self.root, text = "Name of the Chip :", font = ("TkDefaultFont", 20, "bold"))
+        self.Chip_label.grid(row = row, column = 0)
+
+        self.Chip_textbox = Ctk.CTkTextbox(master = self.root, width = 100, height = 30, corner_radius = 0,
+                                                font = ("TkDefaultFont", 20, "bold"))
+        self.Chip_textbox.grid(row = row, column = 1, columnspan = 1, padx=10, pady=10)
+
+        self.support_label = Ctk.CTkLabel(self.root, text = "Name of the Support :", font = ("TkDefaultFont", 20, "bold"))
+        self.support_label.grid(row = row, column = 2)
+
+        self.support_textbox = Ctk.CTkTextbox(master = self.root, width = 100, height = 30, corner_radius = 0,
+                                      font = ("TkDefaultFont", 20, "bold"))
+        self.support_textbox.grid(row = row, column = 3, columnspan = 1, padx = 10, pady = 10)
 
         row+=1
 
@@ -181,15 +178,19 @@ class ImageSelector:
         self.chipLabel = Ctk.CTkLabel(self.root, text = "Chip")
         self.chipLabel.grid(row = row, column = 2, padx = 0, pady = 0)
 
-        self.blurLabel = Ctk.CTkLabel(self.root, text = "Blur")
-        self.blurLabel.grid(row = row, column = 3, padx = 0, pady = 0)
+        self.radiusLabel = Ctk.CTkLabel(self.root, text = "Radius guess")
+        self.radiusLabel.grid(row = row, column = 3, padx = 0, pady = 0)
 
-        self.acceptanceLabel = Ctk.CTkLabel(self.root, text = "Threshold")
-        self.acceptanceLabel.grid(row = row, column = 4, padx = 0, pady = 0)
+        self.numberdotsLabel = Ctk.CTkLabel(self.root, text = "# dots")
+        self.numberdotsLabel.grid(row = row, column = 4, padx = 0, pady = 0)
 
-        self.canvas_axes = Ctk.CTkCanvas(self.root, width = 70, height = 70, background = root["bg"],highlightthickness = 0)
+        self.pxlaccuLabel = Ctk.CTkLabel(self.root, text = "pxl\naccuracy")
+        self.pxlaccuLabel.grid(row = row, column = 5, padx = 0, pady = 0)
+
+        self.canvas_axes = Ctk.CTkCanvas(self.root, width = 70, height = 70, background = root["bg"],
+                                         highlightthickness = 0)
         self.canvas_axes.grid(row = row, column = 0,rowspan=2, padx = 0, pady = 0)
-        self.draw_axes(70)
+        self.__init_ax__(70)
 
         analyse_btn = Ctk.CTkButton(self.root, text = "Analyse", command = self.analyse)
         analyse_btn.grid(row = row, column = 1,rowspan=2, padx = 0, pady = 0)
@@ -198,53 +199,53 @@ class ImageSelector:
 
         self.chip_combobox = Ctk.CTkComboBox(root, width = 80,
                                           values = ["NTD", "heater"])
-        self.chip_combobox.grid(row = row, column = 2, padx = 10, pady = 0)
+        self.chip_combobox.grid(row = row, column = 2, padx = 0, pady = 0)
         self.chip_combobox.set("NTD")
 
-        self.blur_combobox = Ctk.CTkComboBox(root, width = 80,
-                                          values = ["{:.0f}".format(i*10) for i in range(11)],
-                                                  command = lambda x: self.analyse())
-        self.blur_combobox.grid(row = row, column = 3, padx = 10, pady = 0)
-        self.blur_combobox.set("0")
+        self.radius_combobox = Ctk.CTkComboBox(root, width = 80,
+                                               values = ["{:.0f}".format(i*10) for i in range(20,61)])
+        self.radius_combobox.grid(row = row, column = 3, padx = 0, pady = 0)
+        self.radius_combobox.set("400")
+        
+        self.numberdots_combobox = Ctk.CTkComboBox(root, width = 40,
+                                                   values = ["{:.0f}".format(i) for i in range(1,10)])
+        self.numberdots_combobox.grid(row = row, column = 4, padx = 10, pady = 0)
+        self.numberdots_combobox.set("1")
 
-        self.threshold_combobox = Ctk.CTkComboBox(root, width = 80,
-                                                  values = ["{:.1f}".format(i * 0.1) for i in range(1,11)],
-                                                  command = lambda x: self.analyse())
-        self.threshold_combobox.grid(row = row, column = 4, padx = 10, pady = 0)
-        self.threshold_combobox.set("0.4")
+        self.pxlaccu_combobox = Ctk.CTkComboBox(root, width = 40,
+                                                   values = ["{:.0f}".format(i) for i in range(1, 10)])
+        #                                           command = lambda x: self.analyse())
+        self.pxlaccu_combobox.grid(row = row, column = 5, padx = 10, pady = 0)
+        self.pxlaccu_combobox.set("5")
+
         row +=1
         self.canvas_diff = Ctk.CTkCanvas(self.root,width = 230, height = 230, background = root["bg"])
         self.canvas_diff.grid(row = row, column = 0,columnspan=2, padx = 10, pady = 10)
-
-        self.canvas_uniform = Ctk.CTkCanvas(self.root,width = 230, height = 230, background = root["bg"])
-        self.canvas_uniform.grid(row = row, column = 2,columnspan=3, padx = 10, pady = 10)
+        self.canvas_edge = Ctk.CTkCanvas(self.root, width = 230, height = 230, background = root["bg"])
+        self.canvas_edge.grid(row = row, column = 2, columnspan=3, padx = 10, pady = 10)
         row+=1
-        self.canvas_thr = Ctk.CTkCanvas(self.root,width = 230, height = 230, background = root["bg"])
-        self.canvas_thr.grid(row = row, column = 0,columnspan=2, padx = 10, pady = 10)
-
         self.canvas_circle = Ctk.CTkCanvas(self.root,width = 230, height = 230, background = root["bg"])
-        self.canvas_circle.grid(row = row, column = 2,columnspan=3, padx = 10, pady = 10)
+        self.canvas_circle.grid(row = row, column = 0,columnspan=4, padx = 10, pady = 10)
         row+=1
-        self.sheet = tksheet.Sheet(root, column_width = 90, height = 40, width = 5 * 90+40,
+        self.sheet = tksheet.Sheet(root, column_width = 90, height = 40, width = 6 * 90+30,
                               show_x_scrollbar = False,show_y_scrollbar = False,row_index_width = 0,
                               header_font = ("Calibri", 8, "normal"),
                               index_font = ("Calibri", 9, "normal"))
-        ts = [0, 0, 0, 0, 2]
-        self.sheet.set_sheet_data([[f"{val:.{t}f}" for val, t in zip(arr, ts)] for arr in [[0,0,0,0,0]]])
         self.sheet.grid(row = row, column = 0, columnspan = 5, padx = 5, pady = 5)
-        self.sheet.enable_bindings(("single_select", "row_select", "column_width_resize","arrowkeys",
+        self.sheet.enable_bindings("single_select", "row_select", "column_width_resize","arrowkeys",
                                "right_click_popup_menu", "rc_select", "rc_insert_row", "rc_delete_row",
-                               "copy","cut","paste","delete", "undo","edit_cell"))
-        self.sheet.headers(["radius","X","Y","fit error","(max-min)/max"], )
+                               "copy","cut","paste","delete", "undo","edit_cell")
+        self.sheet.headers(["Radius","X","Y","dX","dY","Accum"], )
         self.sheet.change_theme("dark")
         self.sheet.table_align("c")
+        self.__init_sheet__()
         row+=1
         save_btn = Ctk.CTkButton(self.root, text = "Save", command = self.save)
         save_btn.grid(row = row, column = 1, rowspan = 2, padx = 0, pady = 0)
         self.image1 = None
         self.image2 = None
         self.im_diff = None
-        self.im_uniform = None
+        self.im_edge = None
         self.im_thr = None
         self.im_circle = None
         self.path1 = None
@@ -258,13 +259,19 @@ class ImageSelector:
         self.History.grid(row = 0, column = 10, rowspan=10, padx = (0, 10), pady = (10, 0), sticky = "nse")
         self.load_df()
 
+    def __init_sheet__(self):
+        self.sheet.set_sheet_data([[f"{val:.{t}f}" for val, t in zip(arr, [0, 0, 0, 0, 0, 2])] for arr in [[0, 0, 0, 0, 0, 0]]])
+        for i,_ in enumerate(self.sheet.data):
+            self.sheet[i, 5].bg = "black"
 
-    def draw_axes(self,length=40):
+
+    def __init_ax__(self, length=40):
         start = 4
         self.canvas_axes.create_line(start, start, length-start, start, arrow=tk.LAST, width=2, fill="white")
         self.canvas_axes.create_line(start, start, start,  length-start, arrow=tk.LAST, width=2, fill="white")
         self.canvas_axes.create_text(length-4, start+10, text="X", fill="white")
         self.canvas_axes.create_text(start+10 ,length-4, text="Y", fill="white")
+
     def resize_with_aspect_ratio(self, img, max_size = (250, 250)):
         """Resize the image while keeping the aspect ratio."""
         if img.dtype != np.uint8:
@@ -291,18 +298,18 @@ class ImageSelector:
 
     def load_df(self):
         dir = self.dir
-        df = pd.DataFrame({"file":os.listdir(dir)})
-        df = df[df["file"].str[-4:]==".bmp"]
-        df["num"] = df["file"].str[-14:-4].astype('int')
-        df["file_path"] = df["file"].apply(lambda x: os.path.join(dir, str(x)))
-        df["radius"] = None
-        df = df.set_index("file")
         if os.path.isfile(dir+"/"+"data.csv"):
-            df_saved = pd.read_csv(dir+"/"+"data.csv")
-            df_saved = df_saved.set_index("file")
-            df.loc[df_saved.index,df_saved.columns] = df_saved
+            dtype = {"radius":float,"X":float,"Y":float,"dX":float,"dY":float,"accum":float,"radius_goal":float,"n_dots":float,
+                     "crop_top":float,"crop_bottom":float,"crop_left":float,"crop_right":float,"pxl_accuracy":float}
+            df = pd.read_csv(dir+"/"+"data.csv",dtype=dtype)
+        else :
+            df = pd.DataFrame({"file": os.listdir(dir)})
+            df = df[df["file"].str[-4:] == ".bmp"]
+            df["num"] = df["file"].str[-14:-4].astype('int')
+            df["file_path"] = df["file"].apply(lambda x: os.path.join(dir, str(x)))
+            df["radius"] = None
+        df = df.set_index("file")
         self.df = df
-        print(self.df)
         self.update_history()
 
     def update_history(self):
@@ -313,9 +320,10 @@ class ImageSelector:
     def select_directory(self):
         self.dir = filedialog.askdirectory(initialdir=self.dir)
         self.dir_label.configure(text=self.dir)
-
+        self.load_df()
 
     def select_image1(self,file_path=None):
+        self.__init_sheet__()
         if file_path is None :
             file_path = filedialog.askopenfilename(initialdir=self.dir
                                                ,filetypes=[("Image files", "*.bmp")])
@@ -335,9 +343,6 @@ class ImageSelector:
             prev_path = self.df.loc[self.df["num"]==num-1,"file_path"]
             if len(prev_path)>0:
                 self.select_image2(file_path=prev_path.values[0])
-
-
-
     def select_image2(self,file_path=None):
         if file_path is None :
             file_path = filedialog.askopenfilename(initialdir=self.dir
@@ -352,49 +357,95 @@ class ImageSelector:
             self.image2 = ImageTk.PhotoImage(img)  # Convert to ImageTk for display in Tkinter
             self.canvas2.create_image(0, 0, anchor=tk.NW, image=self.image2)
 
+    def __analysis_images__(self,list_img):
+        im_diff, im_edge, imag = list_img
+        self.im_diff = self.plot_image(im_diff)
+        self.canvas_diff.create_image(0, 0, anchor = tk.NW, image = self.im_diff)
+        self.im_edge = self.plot_image(im_edge)
+        self.canvas_edge.create_image(0, 0, anchor = tk.NW, image = self.im_edge)
+        self.im_circle = self.plot_image(imag)
+        self.canvas_circle.create_image(0, 0, anchor = tk.NW, image = self.im_circle)
+
     def analyse(self):
         crop = [600,2610, 1370,3520] if self.chip_combobox.get() == "NTD" else [600, 2010, 1370, 2820]
-        blur = int(self.blur_combobox.get())
-        threshold = float(self.threshold_combobox.get())
-        diameter_list,center_list,error_list,minmaxes,crop,list_img = get_dots(self.path1, self.path2, crop = crop, blur=blur,
-                                                                          threshold = threshold)
+        radius_guess = int(self.radius_combobox.get())
+        numberdots = int(self.numberdots_combobox.get())
+        pxlaccu = int(self.pxlaccu_combobox.get())
+        radius_list,xs,ys,accums_list,crop,list_img = get_dots(self.path1, self.path2, crop = crop, r_guess = radius_guess,
+                                                                          n_dots = numberdots, pxl_accuracy = pxlaccu)
+        dx = xs - (crop[3] - crop[2]) // 2
+        dy = ys - (crop[1] - crop[0]) // 2
         self.crop = crop
-        center_list = np.array(center_list)
-        im_diff, im_uniform, im_thr, imag = list_img
-        self.im_diff = self.plot_image(im_diff)
-        self.canvas_diff.create_image(0, 0, anchor=tk.NW, image=self.im_diff)
-        self.im_uniform =self.plot_image(im_uniform)
-        self.canvas_uniform.create_image(0, 0, anchor=tk.NW, image=self.im_uniform)
-        self.im_thr =self.plot_image(255-im_thr)
-        self.canvas_thr.create_image(0, 0, anchor=tk.NW, image=self.im_thr)
-        self.im_circle =self.plot_image(imag)
-        self.canvas_circle.create_image(0, 0, anchor=tk.NW, image=self.im_circle)
-        self.data = np.array([diameter_list,center_list[:,0],center_list[:,1],error_list,minmaxes]).T
-        ts = [0,0,0,0,2]
-        self.sheet.set_sheet_data([[f"{val:.{t}f}" for val,t in zip(arr,ts)]for arr in self.data])
+        self.__analysis_images__(list_img)
+        self.data = np.array([radius_list,xs,ys,dx,dy,accums_list]).T
+        self.__update_sheet__()
+
+
+    def __update_sheet__(self):
+        self.sheet.set_sheet_data([[f"{val:.{t}f}" for val,t in zip(arr,[0,0,0,0,0,2])]for arr in self.data])
         for i,arr in enumerate(self.data):
-            if arr[3]>50:
-                self.sheet[i, 3].bg = "red"
-            if arr[4]>0.2:
-                self.sheet[i, 4].bg = "red"
+            if arr[5]<0.15:
+                self.sheet[i, 5].bg = "red"
+            else:
+                self.sheet[i, 5].bg = "black"
     def history_sel(self,x):
         df = self.df.loc[x]
         self.select_image1(df["file_path"])
         self.select_image2(os.path.join(self.dir,df["Reference_image"]))
-        self.threshold_combobox.set("{:.1f}".format(df["threshold"]))
-        self.blur_combobox.set("{:.0f}".format(df["blur"]))
-        self.chip_combobox.set(df["Glue"])
+        self.numberdots_combobox.set("{:.0f}".format(df["n_dots"]))
+        self.radius_combobox.set("{:.0f}".format(df["radius_goal"]))
+        self.chip_combobox.set(df["Chip"])
+        self.pxlaccu_combobox.set("{:.0f}".format(df["pxl_accuracy"]))
+        self.support_textbox.delete("1.0", 'end-1c')
+        if not pd.isnull(df["support_name"]):
+            self.support_textbox.insert("0.0", df["support_name"])
+        self.Chip_textbox.delete("1.0", 'end-1c')
+        if not pd.isnull(df["Chip_name"]):
+            self.Chip_textbox.insert("0.0", df["Chip_name"])
+        self.crop = self.df.loc[x,["crop_top","crop_bottom","crop_left","crop_right"]].to_numpy(int)
+        cy,cx,radii,dx,dy = self.df.loc[x, ["Y", "X", "radius", "dX", "dY"]].to_numpy(int).reshape(-1,1)
+        accums_list = self.df.loc[x, ["accum"]].to_numpy(float).reshape(-1)
+        list_img = plot_dots(df["file_path"], os.path.join(self.dir,df["Reference_image"]),self.crop, cy,cx,radii)
+        self.__analysis_images__(list_img)
+        self.data = np.array([radii, cx, cy, dx, dy, accums_list]).T
+        self.__update_sheet__()
 
     def save(self):
-        self.df.loc[os.path.basename(self.path1),["radius","X","Y","fit error","(max-min)/max"]]=self.data[0]
-        self.df.loc[os.path.basename(self.path1),["Glue","blur","threshold"]] = [self.chip_combobox.get(),self.blur_combobox.get(), self.threshold_combobox.get()]
+        self.df.loc[os.path.basename(self.path1),["radius","X","Y","dX","dY","accum"]] = self.data[0]
+        self.df.loc[os.path.basename(self.path1),["Chip","radius_goal","n_dots","pxl_accuracy"]] = [self.chip_combobox.get(),
+                                                                                     int(self.radius_combobox.get()),
+                                                                                     int(self.numberdots_combobox.get()),
+                                                                                     int(self.pxlaccu_combobox.get())]
         self.df.loc[os.path.basename(self.path1), "Reference_image"] = os.path.basename(self.path2)
         self.df.loc[os.path.basename(self.path1), ["crop_top","crop_bottom","crop_left","crop_right"]] = self.crop
+        self.df.loc[os.path.basename(self.path1), ["Chip_name","support_name"]]=[self.Chip_textbox.get("1.0",'end-1c'),self.support_textbox.get("1.0",'end-1c')]
         self.df.to_csv(os.path.dirname(self.path1)+"/"+"data.csv")
         self.update_history()
 
-
+def auto_analysis():
+    df_b = pd.read_csv(os.path.join("/media/mp274748/Transcend/data/Glue_Files/241015_145732/CAM1","data.csv"))
+    df_b = df_b.set_index("file")
+    df = df_b.loc[np.logical_not(df_b["radius"].isnull())]
+    for i in df.index:
+        if df.loc[i,"radius"] != np.nan:
+            path1 = df.loc[i,"file_path"]
+            path2 = os.path.join("/media/mp274748/Transcend/data/Glue_Files/241015_145732/CAM1",df.loc[i,'Reference_image'])
+            crop = [600, 2610, 1370, 3520]
+            radius_guess = 500
+            numberdots = 1
+            pxlaccu = 1
+            radius_list, xs, ys, accums_list, crop, list_img = get_dots(path1, path2, crop = crop,
+                                                                        r_guess = radius_guess,
+                                                                        n_dots = numberdots, pxl_accuracy = pxlaccu)
+            dx = xs - (crop[3] - crop[2]) // 2
+            dy = ys - (crop[1] - crop[0]) // 2
+            df_b.loc[i, ["radius", "X", "Y", "dX", "dY", "accum"]] = np.array([radius_list,xs,ys,dx,dy,accums_list]).T
+            df_b.loc[i, ["crop_top", "crop_bottom", "crop_left", "crop_right"]]=crop
+            df_b.loc[i,["radius_goal","pxl_accuracy"]]=[radius_guess,pxlaccu]
+    print(df_b.loc[np.logical_not(df_b["radius"].isnull())])
+    df_b.to_csv(os.path.join("/media/mp274748/Transcend/data/Glue_Files/241015_145732/CAM1","data.csv"))
 if __name__ == "__main__":
     root = Ctk.CTk()
     app = ImageSelector(root)
     root.mainloop()
+    # auto_analysis()
