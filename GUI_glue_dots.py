@@ -9,6 +9,7 @@ import numpy as np
 import scipy
 from skimage.transform import hough_circle, hough_circle_peaks
 from skimage.morphology import dilation, disk
+from skimage.measure import find_contours
 from skimage.feature import canny
 import customtkinter as Ctk
 def convert_arr_2_img(arr):
@@ -78,7 +79,11 @@ def get_dots(path, path_ref, crop=None, r_guess=400, n_dots=1, pxl_accuracy=5):
     image = cv2.normalize(im_diff, None, 0, 255, cv2.NORM_MINMAX)
     edges = canny(image, sigma = 3, low_threshold = 10, high_threshold = 50)
     edges_thick = dilation(edges, disk(10))
+    contour = find_contours(edges_thick)
+    contour = max(contour, key = lambda c: len(c)).astype(int)
     hough_radii = np.arange(r_guess-30, r_guess+30, pxl_accuracy)
+    contour_img = np.zeros_like(contour)
+    contour_img[contour[:,1],contour[:,0]] = 255
     hough_res = hough_circle(edges, hough_radii)
     accums, cx, cy, radii = hough_circle_peaks(hough_res, hough_radii, total_num_peaks = n_dots)
     for center_y, center_x, radius in zip(cy, cx, radii):
@@ -114,11 +119,11 @@ class MyScrollableCheckboxFrame(Ctk.CTkScrollableFrame):
         for widget in self.winfo_children():
             widget.destroy()
         for label in values:
-            text_label = Ctk.CTkLabel(self, text=label, text_color="blue", cursor="hand2")
+            text_label = Ctk.CTkLabel(self, text=label, text_color="light sky blue", cursor="hand2")
             text_label.pack(pady=1)
             text_label.bind("<Button-1>", lambda e, text=label: self.on_click(text))
     def add_label(self,label):
-        text_label = Ctk.CTkLabel(self, text = label, text_color = "blue", cursor = "hand2")
+        text_label = Ctk.CTkLabel(self, text = label, text_color = "light sky blue", cursor = "hand2")
         text_label.pack(pady = 1)
         text_label.bind("<Button-1>", lambda e, text = label: self.on_click(text))
     def on_click(self, text):
@@ -130,11 +135,11 @@ class ImageSelector:
 
         self.root = root
         self.root.title("Image Selector")
-        self.dir = "/local/home/mp274748/Documents/data/Glue/241015_145732/CAM1"#"/media/mp274748/Transcend/data/Glue_Files/241015_145732/CAM1"
+        self.dir = "/media/mp274748/Transcend/data/Glue_Files/241211_140213/CAM1"#"/media/mp274748/Transcend/data/Glue_Files/241015_145732/CAM1"
         #self.root.geometry("320x220")
         row = 0
 
-        self.dir_label = Ctk.CTkLabel(self.root, text = self.dir , text_color = "blue")
+        self.dir_label = Ctk.CTkLabel(self.root, text = self.dir , text_color = "light sky blue")
         self.dir_label.grid(row=row, column=0,columnspan = 4)
         self.dir_label.bind("<Button-1>", lambda x:self.select_directory())
 
@@ -203,7 +208,7 @@ class ImageSelector:
         self.chip_combobox.set("NTD")
 
         self.radius_combobox = Ctk.CTkComboBox(root, width = 80,
-                                               values = ["{:.0f}".format(i*10) for i in range(20,61)])
+                                               values = ["{:.0f}".format(i*10) for i in range(45,71)])
         self.radius_combobox.grid(row = row, column = 3, padx = 0, pady = 0)
         self.radius_combobox.set("400")
         
@@ -308,12 +313,13 @@ class ImageSelector:
             df["num"] = df["file"].str[-14:-4].astype('int')
             df["file_path"] = df["file"].apply(lambda x: os.path.join(dir, str(x)))
             df["radius"] = None
+            df["Reference_image"] = None
         df = df.set_index("file")
         self.df = df
         self.update_history()
 
     def update_history(self):
-        df = self.df.loc[np.logical_not(self.df["radius"].isnull())]
+        df = self.df.loc[~self.df["Reference_image"].isnull()]
         df.sort_values(by=['num'])
         self.History.create_labels(df.index)
 
@@ -339,7 +345,7 @@ class ImageSelector:
             self.load_df()
             print(self.path1)
             print(self.df["file_path"])
-            num = self.df.loc[self.df["file_path"]==self.path1,"num"].values[0]
+            num = self.df.loc[os.path.basename(file_path),"num"]
             prev_path = self.df.loc[self.df["num"]==num-1,"file_path"]
             if len(prev_path)>0:
                 self.select_image2(file_path=prev_path.values[0])
@@ -423,7 +429,7 @@ class ImageSelector:
         self.update_history()
 
 def auto_analysis():
-    df_b = pd.read_csv(os.path.join("/media/mp274748/Transcend/data/Glue_Files/241015_145732/CAM1","data.csv"))
+    df_b = pd.read_csv(os.path.join("/media/mp274748/Transcend/data/Glue_Files/241211_140213/CAM1/","data.csv"))
     df_b = df_b.set_index("file")
     df = df_b.loc[np.logical_not(df_b["radius"].isnull())]
     for i in df.index:
@@ -444,6 +450,19 @@ def auto_analysis():
             df_b.loc[i,["radius_goal","pxl_accuracy"]]=[radius_guess,pxlaccu]
     print(df_b.loc[np.logical_not(df_b["radius"].isnull())])
     df_b.to_csv(os.path.join("/media/mp274748/Transcend/data/Glue_Files/241015_145732/CAM1","data.csv"))
+def inherit_previous():
+    df = pd.read_csv(os.path.join("/media/mp274748/Transcend/data/Glue_Files/241211_140213/CAM1", "data.csv"),
+                     index_col = 1)
+    big_dot_idx = df[~df["radius"].isnull()].index + 1
+    df.loc[big_dot_idx, ["Chip", "n_dots", "pxl_accuracy", "Reference_image", "crop_top", "crop_bottom", "crop_left",
+                         "crop_right", "Chip_name", "support_name"]] = df.loc[
+        big_dot_idx - 1, ["Chip", "n_dots", "pxl_accuracy", "Reference_image", "crop_top", "crop_bottom", "crop_left",
+                          "crop_right", "Chip_name", "support_name"]].values
+    df = df.reset_index()
+    df = df.set_index("file")
+    df.to_csv(os.path.join("/media/mp274748/Transcend/data/Glue_Files/241211_140213/CAM1", "data.csv"))
+
+
 if __name__ == "__main__":
     root = Ctk.CTk()
     app = ImageSelector(root)
