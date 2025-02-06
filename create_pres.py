@@ -1,58 +1,78 @@
+import numpy as np
+from pptx import Presentation
+from pptx.util import Inches
 import pandas as pd
 from pptx import Presentation
 from pptx.util import Inches
+from PIL import Image
+import io
 
-def create_table(n_col,n_line,slide):
-    x, y, cx, cy = Inches(1), Inches(2), Inches(4), Inches(1.5)
-    shape = slide.shapes.add_table(n_col,n_line, x, y, cx, cy)
-    tbl = shape._element.graphic.graphicData.tbl
-    style_id = '{5940675A-B579-460E-94D1-54222C63F5DA}'
-    tbl[0][-1].text = style_id
-    table = shape.table
-    col_w = []
-    cols = table.columns
-    for colno in range(n_line):
-        cols[colno].width =  Inches(1.5) if colno!=0 else Inches(2.5)
-    return table
+def resize_image(input_path, new_width):
+    with Image.open(input_path) as img:
+        # Calculate the new height to maintain the aspect ratio
+        width_percent = (new_width / float(img.size[0]))
+        new_height = int((float(img.size[1]) * float(width_percent)))
+        # Resize image
+        img = img.resize((new_width, new_height),  Image.Resampling.LANCZOS)
+
+        # Save the resized image to a byte stream
+        img_byte_arr = io.BytesIO()
+        img.save(img_byte_arr, format = 'PNG')
+        img_byte_arr.seek(0)  # Move to the start of the byte stream
+        return img_byte_arr
+# Create a presentation object
 prs = Presentation()
-df = pd.read_csv("/local/home/mp274748/Documents/data/Glue/240716_heaters/all_infos.csv")
-df = df.sort_values("filename")
-for filename in df["filename"].unique():
-    df_b = df.loc[df["filename"] == filename].sort_values("position")
-    slide = prs.slides.add_slide(prs.slide_layouts[5])
-    for shape in slide.shapes:
-        if shape.has_text_frame:
-            text_frame = shape.text_frame
-            p = text_frame.paragraphs[0]
-            crys = df_b["Crystal"].unique()
-            crys = crys[0] if type( crys[0])==str else crys[1]
-            chip = df_b["Chip"].unique()
-            chip = chip[0] if type(chip[0]) == str else chip[1]
-            p.text = crys + " / " + chip
-    table = create_table(6,5,slide)
-    table.cell(0,0).text = "Filename"
-    table.cell(0, 1).text = "Crystal"
-    table.cell(0, 2).text = "Chip"
-    table.cell(0,3).text = "Position"
-    table.cell(0,4).text = "Radius"
-    cell = table.cell(1,0)
-    other_cell = table.cell(5,0)
-    cell.merge(other_cell)
-    cell.text = filename
-    for i,col in enumerate(["Crystal", "Chip","position","corrected_diameter_in_um"]):
-        for j, index in enumerate(df_b.index):
-            cell = table.cell(j+1,i+1)
-            try:
-                cell.text = df.loc[index,col]  if type(df.loc[index,col]) == str else "" if pd.isna(df_b.loc[index,col]) else "{:.2f}".format(df.loc[index,col])
-            except:
-                cell.text = ""
-    cell = table.cell(1, 1)
-    other_cell = table.cell(5, 1)
-    cell.merge(other_cell)
-    cell = table.cell(1, 2)
-    other_cell = table.cell(5, 2)
-    cell.merge(other_cell)
-    #pic = slide.shapes.add_picture("/local/home/mp274748/Documents/data/Glue/240716_heaters/"+filename, Inches(1), Inches(4.5),Inches(3))
-    #pic.crop_top,pic.crop_bottom,pic.crop_left,pic.crop_right= 0.1,0.2,0.15,0.2
+prs.slide_width = Inches(16)
+prs.slide_height = Inches(9)
+# Add a title slide
+slide_layout = prs.slide_layouts[0]  # Layout for title slide
+slide = prs.slides.add_slide(slide_layout)
+title = slide.shapes.title
+subtitle = slide.placeholders[1]
 
-prs.save('/local/home/mp274748/Documents/data/Glue/test.pptx')
+title.text = "Ulysse test Gluing with UV620/UV645 and LUMI NTD"
+subtitle.text = "06/02/2025"
+
+
+path = "/media/mp274748/Transcend/data/Glue_Files/250129_143502/CAM1/data.csv"
+df1 = pd.read_csv(path)
+path = "/media/mp274748/Transcend/data/Glue_Files/250130_112657/CAM1/data.csv"
+df2 = pd.read_csv(path)
+path = "/media/mp274748/Transcend/data/Glue_Files/250204_112143/CAM1/data.csv"
+df3 = pd.read_csv(path)
+df = pd.concat((df1,df2,df3))
+# path = "/media/mp274748/Transcend/data/Glue_Files/250206_110255/CAM1/data.csv"
+# df = pd.read_csv(path)
+
+df = df.set_index("file")
+df = df.loc[pd.notnull(df["support_name"])]
+for Chip_name in df["Chip_name"].unique():
+    sub_df_1 = df[df["Chip_name"]==Chip_name]
+    slide_layout = prs.slide_layouts[1]  # Layout for title and content
+    slide = prs.slides.add_slide(slide_layout)
+    for i,idx in enumerate(sub_df_1.index):
+        sub_df = sub_df_1.loc[idx]
+        if isinstance(sub_df, pd.Series):
+            sub_df = sub_df.to_frame().T
+        if "dot_nums" not in sub_df.columns:
+            sub_df["dot_nums"] = np.zeros(len(sub_df))
+        sub_df = sub_df.set_index(["dot_nums"])
+        title = slide.shapes.title
+        title.text =sub_df.loc[sub_df.index[0],"Chip"] +" "+ str(sub_df.loc[sub_df.index[0],"Chip_name"]) + " on " + sub_df.loc[sub_df.index[0],"support_name"]
+        img_path = sub_df.loc[sub_df.index[0],"file_path"]
+        resized_image_stream = resize_image(img_path, 800)
+        slide.shapes.add_picture(resized_image_stream, Inches(0.5)+ i*Inches(5.5), Inches(1.3), Inches(5), Inches(4))
+        table = slide.shapes.add_table(len(sub_df)+1, 2, Inches(0.5) + i*Inches(5.5), Inches(5.75), Inches(5), Inches(2)).table
+        table.cell(0, 0).text = "Radius"
+        table.cell(0, 1).text = "fit\nAccuracy"
+        for j, dot_num in enumerate(sub_df.index):
+            table.cell(int(j)+1, 0).text = "{:.0f}".format(sub_df.loc[dot_num,"radius"])
+            table.cell(int(j)+1, 1).text = "{:.2f}".format(sub_df.loc[dot_num,"accum"])
+        textbox = slide.shapes.add_textbox(Inches(0.5)+ i*Inches(5.5), Inches(5.25), Inches(5), Inches(1.5))
+        text_frame = textbox.text_frame
+        text_frame.text = idx
+        break
+# Save the presentation
+prs.save('/media/mp274748/Transcend/data/Glue_Files/Ulysse_test_02-2025.pptx')
+# prs.save('/media/mp274748/Transcend/data/Glue_Files/CROSS_gluing_06_02_2025.pptx')
+print("Presentation created successfully!")
