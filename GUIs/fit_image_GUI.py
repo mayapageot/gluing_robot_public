@@ -8,7 +8,6 @@ import numpy as np
 import scipy
 import cv2
 from scipy.spatial import ConvexHull
-from sklearn.cluster import DBSCAN,KMeans
 from scipy.interpolate import UnivariateSpline,splev,splprep
 from scipy.spatial import KDTree
 

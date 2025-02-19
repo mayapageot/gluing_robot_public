@@ -46,6 +46,18 @@ df = pd.concat((df1,df2,df3))
 
 df = df.set_index("file")
 df = df.loc[pd.notnull(df["support_name"])]
+# print(df.loc[df["glue_mass"].notna()].columns)
+df_info = df.loc[df["glue_mass"].notna(),["Chip_name","support_name","glue_mass"]]
+slide_layout = prs.slide_layouts[1]  # Layout for title and content
+slide = prs.slides.add_slide(slide_layout)
+table = slide.shapes.add_table(len(df_info)+1, 3, Inches(0.5) + Inches(5.5), Inches(5.75), Inches(5), Inches(2)).table
+table.cell(0, 0).text = "Chip name"
+table.cell(0, 1).text = "Crystal name"
+table.cell(0, 2).text = "glue mass (μg)"
+for j, df_info_index in enumerate(df_info.index):
+    table.cell(int(j) + 1, 0).text = "{}".format(df_info.loc[df_info_index, "Chip_name"])
+    table.cell(int(j) + 1, 1).text = "{}".format(df_info.loc[df_info_index, "support_name"])
+    table.cell(int(j) + 1, 2).text = "{:.0f}".format(df_info.loc[df_info_index, "glue_mass"])
 for Chip_name in df["Chip_name"].unique():
     sub_df_1 = df[df["Chip_name"]==Chip_name]
     slide_layout = prs.slide_layouts[1]  # Layout for title and content
@@ -62,12 +74,18 @@ for Chip_name in df["Chip_name"].unique():
         img_path = sub_df.loc[sub_df.index[0],"file_path"]
         resized_image_stream = resize_image(img_path, 800)
         slide.shapes.add_picture(resized_image_stream, Inches(0.5)+ i*Inches(5.5), Inches(1.3), Inches(5), Inches(4))
-        table = slide.shapes.add_table(len(sub_df)+1, 2, Inches(0.5) + i*Inches(5.5), Inches(5.75), Inches(5), Inches(2)).table
-        table.cell(0, 0).text = "Radius"
+        table = slide.shapes.add_table(len(sub_df)+1, 3, Inches(0.5) + i*Inches(5.5), Inches(5.75), Inches(5), Inches(2)).table
+        table.cell(0, 0).text = "Radius (pxl)"
         table.cell(0, 1).text = "fit\nAccuracy"
+        table.cell(0, 2).text = "mass (μg)"
         for j, dot_num in enumerate(sub_df.index):
             table.cell(int(j)+1, 0).text = "{:.0f}".format(sub_df.loc[dot_num,"radius"])
             table.cell(int(j)+1, 1).text = "{:.2f}".format(sub_df.loc[dot_num,"accum"])
+            if dot_num==0:
+                table.cell(int(j) + 1, 2).text = "{:.2f}".format(sub_df.loc[dot_num, "glue_mass"])
+        cell = table.cell(1, 2)
+        other_cell = table.cell(len(sub_df),2)
+        cell.merge(other_cell)
         textbox = slide.shapes.add_textbox(Inches(0.5)+ i*Inches(5.5), Inches(5.25), Inches(5), Inches(1.5))
         text_frame = textbox.text_frame
         text_frame.text = idx
@@ -76,3 +94,4 @@ for Chip_name in df["Chip_name"].unique():
 prs.save('/media/mp274748/Transcend/data/Glue_Files/Ulysse_test_02-2025.pptx')
 # prs.save('/media/mp274748/Transcend/data/Glue_Files/CROSS_gluing_06_02_2025.pptx')
 print("Presentation created successfully!")
+

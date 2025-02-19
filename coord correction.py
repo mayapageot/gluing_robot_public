@@ -139,7 +139,6 @@ if __name__=='__main__':
     #get_XY_glue_5spots_selected_module(new_commend_file_path, gluing_module=np.arange(1,16),dots_number=5, file_name='_dot_gluing_selected.xlsx')
     #scan_profile_modules(commend_file_path, gluing_module = [14])
     #correct_glue(r"C:\GluingRobotData\Data_gluing\2024_02_19\192.168.200.2\SD2\cv-x\result\SD1_013\240220_114535.txt","C:\GluingRobotData\coord_correction\dXY_camera_glue_bis.txt", modules=np.arange(1,16))
-    #dXY_camera_glue = np.loadtxt(r"C:\GluingRobotData\coord_correction\dXY_camera_glue.txt")
     get_XY_glue_selected_module(new_commend_file_path,gluing_module=[1,2,3,4,5,6,7,12],dots_number=5)
     """modules_to_glue = [22]
     XY = get_XY_camera_mean(file_path)
