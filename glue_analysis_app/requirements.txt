@@ -1,0 +1,8 @@
+streamlit
+opencv-python-headless
+pillow
+numpy
+pandas
+scikit-image
+joblib
+streamlit-drawable-canvas

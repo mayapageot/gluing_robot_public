@@ -14,6 +14,7 @@ from skimage.morphology import dilation, disk
 from skimage.measure import find_contours
 from skimage.feature import canny
 import customtkinter as Ctk
+from joblib import Parallel, delayed
 def convert_arr_2_img(arr):
     image_array_normalized = cv2.normalize(arr, None, 0, 255, cv2.NORM_MINMAX)
     image_array_normalized = image_array_normalized.astype(np.uint8)
@@ -68,7 +69,7 @@ def get_chip(path_ref,crop):
     return crop,center_chip
 
 
-def get_dots(path, path_ref, crop=None, r_guess=400, n_dots=1, pxl_accuracy=5):
+def get_dots(path, path_ref, crop=None, r_guess=400, n_dots=1, pxl_accuracy=5,pxl_range=30):
     imag = cv2.imread(path)
     if crop is None:
         crop = [0,imag.shape[0],0,imag.shape[1]]
@@ -85,13 +86,15 @@ def get_dots(path, path_ref, crop=None, r_guess=400, n_dots=1, pxl_accuracy=5):
     contour = find_contours(edges_thick)
     contour = max(contour, key = lambda c: len(c)).astype(int)
     area = [cv2.contourArea(contour)]
-    hough_radii = np.arange(r_guess-30, r_guess+30, pxl_accuracy)
+    hough_radii = np.arange(r_guess-pxl_range, r_guess+pxl_range, pxl_accuracy)
+    hough_results = np.concat(Parallel(n_jobs = -1)(delayed(hough_circle)(edges_thick, r) for r in hough_radii))
+    min_dist = r_guess
+    # Peak detection (adjust params to balance speed/accuracy)
+    accums, cx, cy, radii = hough_circle_peaks(hough_results, hough_radii, total_num_peaks = n_dots, min_xdistance=min_dist,min_ydistance=min_dist)
     # min_x ,max_x, min_y,max_y = np.min(contour[:,0]),np.max(contour[:,0]),np.min(contour[:,1]),np.max(contour[:,1])
     # contour_img = np.zeros((max_y-min_y+1,max_x-min_x+1))
     # contour_img[contour[:,1]-min_y,contour[:,0]-min_x] = 255
-    hough_res = hough_circle(edges_thick, hough_radii)
-    min_dist = r_guess
-    accums, cx, cy, radii = hough_circle_peaks(hough_res, hough_radii, total_num_peaks = n_dots, min_xdistance=min_dist,min_ydistance=min_dist)
+    # hough_res = hough_c:ugh_circle_peaks(hough_res, hough_radii, total_num_peaks = n_dots, min_xdistance=min_dist,min_ydistance=min_dist)
     # cx ,cy = cy+min_y,cx+min_x
     # print(cx, cy, radii)
     for center_y, center_x, radius in zip(cy, cx, radii):
@@ -143,7 +146,7 @@ class ImageSelector:
 
         self.root = root
         self.root.title("Image Selector")
-        self.dir = "/media/mp274748/Transcend/data/Glue_Files/250206_110255/CAM1"#"/media/mp274748/Transcend/data/Glue_Files/241015_145732/CAM1"
+        self.dir = "/media/mp274748/Transcend/data/Glue_Files/250506_101037/CAM1"#"/media/mp274748/Transcend/data/Glue_Files/241015_145732/CAM1"
         #self.root.geometry("320x220")
         row = 0
 
@@ -199,6 +202,8 @@ class ImageSelector:
 
         self.pxlaccuLabel = Ctk.CTkLabel(self.root, text = "pxl\naccuracy")
         self.pxlaccuLabel.grid(row = row, column = 5, padx = 0, pady = 0)
+        self.pxlrangeLabel = Ctk.CTkLabel(self.root, text = "pxl\nrange")
+        self.pxlrangeLabel.grid(row = row, column = 6, padx = 0, pady = 0)
 
         self.canvas_axes = Ctk.CTkCanvas(self.root, width = 70, height = 70, background = root["bg"],
                                          highlightthickness = 0)
@@ -211,7 +216,7 @@ class ImageSelector:
         row+=1
 
         self.chip_combobox = Ctk.CTkComboBox(root, width = 80,
-                                          values = ["NTD", "LUMI NTD","heater"])
+                                          values = ["NTD", "LUMI NTD","heater", "NTD_m4"])
         self.chip_combobox.grid(row = row, column = 2, padx = 0, pady = 0)
         self.chip_combobox.set("NTD")
 
@@ -230,7 +235,11 @@ class ImageSelector:
         #                                           command = lambda x: self.analyse())
         self.pxlaccu_combobox.grid(row = row, column = 5, padx = 10, pady = 0)
         self.pxlaccu_combobox.set("5")
-
+        self.pxlrange_combobox = Ctk.CTkComboBox(root, width = 60,
+                                                values = ["{:.0f}".format(i) for i in range(5, 30)])
+        #                                           command = lambda x: self.analyse())
+        self.pxlrange_combobox.grid(row = row, column = 6, padx = 10, pady = 0)
+        self.pxlrange_combobox.set("20")
         row +=1
         self.canvas_diff = Ctk.CTkCanvas(self.root,width = 230, height = 230, background = root["bg"])
         self.canvas_diff.grid(row = row, column = 0,columnspan=2, padx = 10, pady = 10)
@@ -388,11 +397,14 @@ class ImageSelector:
         crop = [600,2610, 1370,3520] if self.chip_combobox.get() == "NTD" else [600, 2010, 1370, 2820]
         if self.chip_combobox.get() == "LUMI NTD":
             crop = [600, 3010, 1370, 3620]
+        if self.chip_combobox.get() == "NTD_m4":
+            crop = [890, 3100, 1440, 3740]
         radius_guess = int(self.radius_combobox.get())
         numberdots = int(self.numberdots_combobox.get())
         pxlaccu = int(self.pxlaccu_combobox.get())
+        pxlrange = int(self.pxlrange_combobox.get())
         radius_list,xs,ys,accums_list,area,crop,list_img = get_dots(self.path1, self.path2, crop = crop, r_guess = radius_guess,
-                                                                          n_dots = numberdots, pxl_accuracy = pxlaccu)
+                                                                          n_dots = numberdots, pxl_accuracy = pxlaccu, pxl_range=pxlrange)
         dx = xs - (crop[3] - crop[2]) // 2
         dy = ys - (crop[1] - crop[0]) // 2
         self.crop = crop
@@ -454,7 +466,7 @@ class ImageSelector:
         self.df.to_csv(os.path.dirname(self.path1) + "/" + "data.csv")
         self.update_history()
 def auto_analysis():
-    df_b = pd.read_csv(os.path.join("/media/mp274748/Transcend/data/Glue_Files/241211_140213/CAM1/","data.csv"))
+    df_b = pd.read_csv(os.path.join("/media/mp274748/Transcend/data/Glue_Files/250206_110255/CAM1/","data.csv"))
     df_b = df_b.set_index("file")
     df = df_b.loc[np.logical_not(df_b["radius"].isnull())]
     for i in df.index:
@@ -474,9 +486,9 @@ def auto_analysis():
             df_b.loc[i, ["crop_top", "crop_bottom", "crop_left", "crop_right"]]=crop
             df_b.loc[i,["radius_goal","pxl_accuracy"]]=[radius_guess,pxlaccu]
     df_b.to_csv(os.path.join("/media/mp274748/Transcend/data/Glue_Files/241015_145732/CAM1","data.csv"))
-def inherit_previous():
-    df = pd.read_csv(os.path.join("/media/mp274748/Transcend/data/Glue_Files/241211_140213/CAM1", "data.csv"),
-                     index_col = 1)
+def inherit_previous(path = "/media/mp274748/Transcend/data/Glue_Files/250219_104747/CAM1"):
+    df = pd.read_csv(os.path.join(path, "data.csv"),
+                     index_col = 2)
     big_dot_idx = df[~df["radius"].isnull()].index + 1
     df.loc[big_dot_idx, ["Chip", "n_dots", "pxl_accuracy", "Reference_image", "crop_top", "crop_bottom", "crop_left",
                          "crop_right", "Chip_name", "support_name"]] = df.loc[
@@ -484,11 +496,45 @@ def inherit_previous():
                           "crop_right", "Chip_name", "support_name"]].values
     df = df.reset_index()
     df = df.set_index("file")
-    df.to_csv(os.path.join("/media/mp274748/Transcend/data/Glue_Files/241211_140213/CAM1", "data.csv"))
+    df.to_csv(os.path.join(path, "data.csv"))
 
-
+def evolution_analisis():
+    dir = "/media/mp274748/Transcend/data/Glue_Files/250206_110255/CAM1/"
+    df_b = pd.read_csv(os.path.join(dir,"data.csv"))
+    print(df_b)
+    df_b = df_b.set_index("file")
+    df_b = df_b.sort_values("num")
+    df =df_b
+    j=0
+    p = np.polyfit([0,4,10],[505,625,655],2)
+    f = np.poly1d(p)
+    print(df["num"])
+    ref_img = "250206_114231_0000000041.bmp"
+    for k in [i+42 for i in range(12)]:
+            i = df[df["num"]==k].index[0]
+            print(df.loc[i])
+            path1 = df.loc[i,"file_path"]
+            path2 = os.path.join(dir,ref_img)
+            crop = [600, 2610, 1370, 3520]
+            radius_guess = int(f(j))
+            numberdots = 1
+            pxlaccu = 1
+            radius_list, xs, ys, accums_list, area, crop, list_img = get_dots(path1, path2, crop = crop,
+                                                                        r_guess = radius_guess,
+                                                                        n_dots = numberdots, pxl_accuracy = pxlaccu)
+            dx = xs - (crop[3] - crop[2]) // 2
+            dy = ys - (crop[1] - crop[0]) // 2
+            df_b.loc[i, ["radius", "X", "Y", "dX", "dY", "accum","area"]] = np.array([radius_list,xs,ys,dx,dy,accums_list,area]).T
+            df_b.loc[i, ["crop_top", "crop_bottom", "crop_left", "crop_right"]]=crop
+            df_b.loc[i,["radius_goal","pxl_accuracy"]]=[radius_guess,pxlaccu]
+            df_b.loc[i,"Reference_image"]=ref_img
+            j+=1
+    df_b.to_csv(os.path.join(dir,"data.csv"))
 if __name__ == "__main__":
+    # inherit_previous("/media/mp274748/Transcend/data/Glue_Files/250506_101037/CAM1")
+
     root = Ctk.CTk()
     app = ImageSelector(root)
     root.mainloop()
     # auto_analysis()
+    # evolution_analisis()
