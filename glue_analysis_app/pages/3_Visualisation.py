@@ -5,6 +5,7 @@ from PIL import Image, ImageDraw
 from datetime import date
 from utils import image_utils
 import numpy as np
+
 BASEDIR = "/media/mp274748/Transcend/data/Glue_Files/"
 CROP = [600, 2610, 1370, 3520]
 def image_path(image_options,num_option,num):
@@ -14,11 +15,19 @@ def page3():
     st.title("Visualize Analysed Images by Date")
 
     # --- Select date ---
+    if "selected_date" not in st.session_state:
+        try:
+            st.session_state.selected_date = st.session_state.selected_date2
+        except:
+            st.session_state.selected_date = date.today()
+
+    # The widget controls the value
     selected_date = st.date_input(
-        "Select a date to visualize analyzed images",
-        date.fromisoformat("2025-02-06"),
-        key="selected_date_vis"
+        "Select a date",
+        st.session_state.selected_date,
+        key = "selected_date"
     )
+    st.session_state.selected_date2 = st.session_state.selected_date
     list_dirs = [dir for dir in os.listdir(BASEDIR) if selected_date.strftime("%y%m%d") == dir[:6]]
 
     if len(list_dirs) == 0:
@@ -81,6 +90,8 @@ def page3():
         cols = st.columns(n_cols_disp)
         for j, img_file in enumerate(selected_images[i:i+n_cols_disp]):
             img_path = os.path.join(dir, img_file)
+            img_df = df[df["image_file"] == img_file]
+            crop = [df["crop_top"].values[0] ,df["crop_bottom"].values[0] , df["crop_left"].values[0] ,df["crop_right"].values[0] ]
             if not os.path.exists(img_path):
                 st.warning(f"Image {img_file} not found!")
                 continue
@@ -88,16 +99,16 @@ def page3():
             # Determine which image to load
             if use_diff:
                 path_ref = image_path(image_options, num_option, selected_numbers[i]-1)
-                im_diff = image_utils.get_im_diff(img_path, path_ref, CROP)
+                im_diff = image_utils.get_im_diff(img_path, path_ref, crop)
                 img = Image.fromarray(im_diff.astype(np.uint8)).convert("RGB")
 
             else:
                 img = Image.open(img_path).convert("RGB")
-                img = img.crop((CROP[2], CROP[0], CROP[3], CROP[1]))
+                img = img.crop((crop[2], crop[0], crop[3], crop[1]))
             draw = ImageDraw.Draw(img)
 
             # Overlay detected circles
-            img_df = df[df["image_file"] == img_file]
+
             for _, row in img_df.iterrows():
                 x, y, r = int(row["x"]), int(row["y"]), int(row["radius"])
                 draw.ellipse([x - r, y - r, x + r, y + r], outline=(255, 0, 0), width=25)

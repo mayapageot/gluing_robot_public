@@ -4,26 +4,17 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c49c73ac-91ab-4056-bcf3-7772d79f1b6b" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/GUIs/firstapp.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/GUIs/testapp.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/glue_analysis_app/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/glue_analysis_app/analysis/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/glue_analysis_app/analysis/image_analysis.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/glue_analysis_app/pages/3_Visualize_Analysis.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/image_analysis/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/image_analysis/merge_contour.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/plots/glue_evolution.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.name" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/coord_correction.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/gluing_robot.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/create_pres.py" beforeDir="false" afterPath="$PROJECT_DIR$/create_pres.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gluing_test/BDPT_repro.py" beforeDir="false" afterPath="$PROJECT_DIR$/gluing_test/BDPT_repro.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/plots/distrib_glue_dots.py" beforeDir="false" afterPath="$PROJECT_DIR$/plots/distrib_glue_dots.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test_programs/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/test_programs/test.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test_programs/test2.py" beforeDir="false" afterPath="$PROJECT_DIR$/test_programs/test2.py" afterDir="false" />
+    <list default="true" id="c49c73ac-91ab-4056-bcf3-7772d79f1b6b" name="Changes" comment="create a dedicated package for the GUI app + add Automatic and visualisation">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GUIs/firstapp.py" beforeDir="false" afterPath="$PROJECT_DIR$/GUIs/firstapp.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/GUIs/testapp.py" beforeDir="false" afterPath="$PROJECT_DIR$/GUIs/testapp.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/glue_analysis_app/analysis/image_analysis.py" beforeDir="false" afterPath="$PROJECT_DIR$/glue_analysis_app/analysis/image_analysis.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/glue_analysis_app/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/glue_analysis_app/app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/glue_analysis_app/config/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/glue_analysis_app/config/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/glue_analysis_app/pages/1_Visual_Analysis.py" beforeDir="false" afterPath="$PROJECT_DIR$/glue_analysis_app/pages/1_Visual_Analysis.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/glue_analysis_app/pages/2_Automatic_Analysis.py" beforeDir="false" afterPath="$PROJECT_DIR$/glue_analysis_app/pages/2_Automatic_Analysis.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/glue_analysis_app/pages/3_Visualize_Analysis.py" beforeDir="false" afterPath="$PROJECT_DIR$/glue_analysis_app/pages/3_Visualisation.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/glue_analysis_app/utils/session_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/glue_analysis_app/utils/session_utils.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -39,6 +30,20 @@
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "math-08"
+  }
+}]]></component>
+  <component name="GithubPullRequestsUISettings">
+    <option name="selectedUrlAndAccountId">
+      <UrlAndAccount>
+        <option name="accountId" value="d0364b40-d656-418b-a102-471969b6fa36" />
+        <option name="url" value="git@github.mit.edu:/math-08/gluing_robot.git" />
+      </UrlAndAccount>
+    </option>
   </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
@@ -87,12 +92,25 @@
       <workItem from="1741113864353" duration="19948000" />
       <workItem from="1741601397726" duration="19086000" />
       <workItem from="1742221225992" duration="1595000" />
-      <workItem from="1758616374696" duration="20459000" />
+      <workItem from="1758616374696" duration="43595000" />
     </task>
+    <task id="LOCAL-00001" summary="create a dedicated package for the GUI app + add Automatic and visualisation">
+      <option name="closed" value="true" />
+      <created>1758641744833</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1758641744833</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="create a dedicated package for the GUI app + add Automatic and visualisation" />
+    <option name="LAST_COMMIT_MESSAGE" value="create a dedicated package for the GUI app + add Automatic and visualisation" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/gluing_robot$test2.coverage" NAME="test2 Coverage Results" MODIFIED="1741197006534" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/test_programs" />

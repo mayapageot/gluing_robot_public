@@ -4,6 +4,7 @@ Session state management utilities for glue analysis app.
 import os
 import pandas as pd
 import streamlit as st
+from datetime import date
 from config.settings import BASEDIR
 import time
 import json
@@ -11,52 +12,63 @@ import numpy as np
 def initial_state_value(key,default_val):
     if key not in st.session_state:
         st.session_state[key] = default_val
+def init_global_session_state():
 
+    initial_state_value("selected_date", date.today())
+    initial_state_value("high_threshold", 30)
+    initial_state_value("downsample_factor", 7)
+    initial_state_value("fit_bool", False)
+    initial_state_value("use_img_bool", False)
+    initial_state_value("contour_bool", False)
+    initial_state_value("fill_bool", False)
+    initial_state_value("r_guess", "500")
 
-def save_session_state(df, filename = "session_state.csv"):
+def save_session_state(df, filename="session_state.csv"):
+    import os
+    import pandas as pd
+
     filename = os.path.join(BASEDIR, filename)
 
-    # Always add crop as JSON string
-    if "crop" in st.session_state:
-        df["crop"] = [json.dumps(st.session_state.crop)]
-    else:
-        df["crop"] = [json.dumps([600, 2610, 1370, 3520])]  # fallback default
+    # --- Relevant dtypes and columns ---
+    dtypes = {
+        "selected_date": str,
+        "selected_num": int,
+        "downsample_factor": int,
+        "pxl_range": int,
+        "n_dots": int,
+        "selected_num_ref": int,
+        "fit_bool": bool,
+        "fill_bool": bool,
+        "use_img_bool": bool,
+        "high_threshold": int,
+        "pxl_accuracy": int,
+        "r_guess": int,
+        "contour_bool": bool,
+        "crop": str,
+    }
+
+    # --- Keep only relevant columns ---
+    df_to_save = pd.DataFrame({col: df.get(col, pd.Series([None])) for col in dtypes.keys()})
+    df_to_save = df_to_save.astype(dtypes)
+
+    # --- Set multi-index for merging/updating ---
+    df_to_save.set_index(["selected_date", "selected_num"], inplace=True)
 
     if os.path.exists(filename):
-        # Load the existing DataFrame
-        dtypes = {
-            "selected_date": str,
-            "selected_num": int,
-            "downsample_factor": int,
-            "pxl_range": int,
-            "n_dots": int,
-            "selected_num_ref": int,
-            "fit_bool": bool,
-            "fill_bool": bool,
-            "use_img_bool": bool,
-            "high_threshold": int,
-            "pxl_accuracy": int,
-            "r_guess": int,
-            "countour_bool": bool,
-            "crop": str,  # stored as JSON string
-        }
-        existing_df = pd.read_csv(filename, dtype = dtypes)
-        existing_df = existing_df.set_index(["selected_date", "selected_num"])
+        # --- Load existing ---
+        existing_df = pd.read_csv(filename).set_index(["selected_date", "selected_num"])
 
-        # Update or insert row
-        existing_df.loc[df.index[0], :] = df.iloc[0]
+        # --- Combine existing + new, overwrite duplicates ---
+        combined_df = pd.concat([existing_df, df_to_save])
+        combined_df = combined_df[~combined_df.index.duplicated(keep="last")]
 
-        # Cast types back (except crop stays str)
-        dtypes.pop("selected_date")
-        dtypes.pop("selected_num")
-        existing_df = existing_df.astype(dtypes)
-
-        existing_df.to_csv(filename)
+        # --- Save back ---
+        combined_df.to_csv(filename)
         st.write("Session state saved/updated.")
     else:
-        df.to_csv(filename)
+        # --- No existing file, just save ---
+        df_to_save.to_csv(filename)
         st.write("Session state saved.")
-
 
 def load_session_state(filename = "session_state.csv"):
     if "selected_num" not in st.session_state:
@@ -81,13 +93,13 @@ def load_session_state(filename = "session_state.csv"):
             if isinstance(row, pd.DataFrame):
                 row = row.iloc[0]
             for key, value in row.items():
-                if key == "crop":
-                    try:
-                        st.session_state["crop"] = json.loads(value) if isinstance(value, str) else value
-                    except Exception:
-                        st.session_state["crop"] = [600, 2610, 1370, 3520]  # fallback default
-
-                else:
-                    st.session_state[key] = value.item() if isinstance(value, np.generic) else value
+                # if key == "crop":
+                #     try:
+                #         st.session_state["crop"] = json.loads(value) if isinstance(value, str) else value
+                #     except Exception:
+                #         st.session_state["crop"] = [600, 2610, 1370, 3520]  # fallback default
+                #
+                # else:
+                st.session_state[key] = value.item() if isinstance(value, np.generic) else value
         except KeyError:
             print(f"No entry for ({selected_date}, {selected_num}) in {filename}")

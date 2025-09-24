@@ -4,20 +4,26 @@ import pandas as pd
 from datetime import date
 from analysis.image_analysis import run_full_analysis
 from utils.session_utils import initial_state_value
-
-BASEDIR = "/media/mp274748/Transcend/data/Glue_Files/"
+from config.settings import BASEDIR, DEFAULT_PARAMS
 
 def page2():
     st.set_page_config(layout="centered")
     st.title("Automatic Analysis")
 
     # --- Select date ---
+    if "selected_date" not in st.session_state:
+        try:
+            st.session_state.selected_date = st.session_state.selected_date2
+        except:
+            st.session_state.selected_date = date.today()
+
+    # The widget controls the value
     selected_date = st.date_input(
         "Select a date",
-        date.fromisoformat("2025-02-06"),
-        key="selected_date_auto"
+        st.session_state.selected_date,
+        key = "selected_date"
     )
-
+    st.session_state.selected_date2 = st.session_state.selected_date
     list_dirs = [dir for dir in os.listdir(BASEDIR) if selected_date.strftime("%y%m%d") == dir[:6]]
 
     if len(list_dirs) == 0:
@@ -74,43 +80,52 @@ def page2():
             step = 1,
             value = st.session_state.delta_ref
         )
-        initial_state_value("high_threshold", 30)
-        high_threshold = st.slider('Edge high_threshold', 10, 100, step=1, value=st.session_state.high_threshold)
+        initial_state_value("high_threshold", DEFAULT_PARAMS["high_threshold"])
+        high_threshold = st.slider('Edge high_threshold', 10, 100, step=1, value=st.session_state.high_threshold,key = "high_threshold")
 
-        initial_state_value("downsample_factor", 7)
-        downsample_factor = st.slider('Downsample factor', 1, 20, step=1, value=int(st.session_state.downsample_factor))
+        initial_state_value("downsample_factor", DEFAULT_PARAMS["downsample_factor"])
+        downsample_factor = st.slider('Downsample factor', 1, 20, step=1, value=int(st.session_state.downsample_factor),key = "downsample_factor")
 
-        initial_state_value("fit_bool", False)
-        fit_bool = st.checkbox('Fit circles', value=st.session_state.fit_bool)
+        initial_state_value("fit_bool", DEFAULT_PARAMS["fit_bool"])
+        fit_bool = st.checkbox('Fit circles', value=st.session_state.fit_bool,key = "fit_bool")
 
-        initial_state_value("use_img_bool", False)
-        use_img_bool = st.checkbox('Use image guess', value=st.session_state.use_img_bool)
+        initial_state_value("contour_bool", DEFAULT_PARAMS["contour_bool"])
+        contour_bool = st.checkbox('Contour filter (for Area)', value = st.session_state.contour_bool,key = "contour_bool")
 
-        initial_state_value("contour_bool", False)
-        contour_bool = st.checkbox('Contour filter (for Area)', value = st.session_state.contour_bool)
-
-        initial_state_value("fill_bool", False)
-        fill_bool = st.checkbox('Fill circles', value = st.session_state.fill_bool)
+        initial_state_value("fill_bool", DEFAULT_PARAMS["fill_bool"])
+        fill_bool = st.checkbox('Fill circles', value = st.session_state.fill_bool, key = "fill_bool")
 
     with col2:
-        initial_state_value("crop_values", "600, 2610, 1370, 3520")
-        crop_val_str = st.text_input("Crop [top, bottom, left, right]:", st.session_state.crop_values)
-
-        initial_state_value("r_guess", 500)
+        initial_state_value("crop",DEFAULT_PARAMS["crop"])
+        crop_val_str = st.text_input("Crop [top, bottom, left, right]:", st.session_state.crop, key="crop")
+        try:
+            crop = [int(x.strip()) for x in crop_val_str.split(",")]
+        except ValueError:
+            st.error("Invalid crop values! Please enter 4 integers separated by commas.")
+            st.session_state.crop = DEFAULT_PARAMS["crop"]
+            crop_val_str = DEFAULT_PARAMS["crop"]
+            crop = [int(x.strip()) for x in crop_val_str.split(",")]  # fallback default
+        initial_state_value("r_guess", DEFAULT_PARAMS["r_guess"])
         r_guess = int(st.text_input("Radius guess:", st.session_state.r_guess))
 
-        initial_state_value("n_dots", 1)
-        n_dots_sel = [i for i in range(1, 10)]
-        n_dots = st.selectbox("Number of dots:", n_dots_sel, n_dots_sel.index(st.session_state.n_dots))
+        initial_state_value("n_dots", DEFAULT_PARAMS["n_dots"])
+        n_dots_sel = list(range(DEFAULT_PARAMS["n_dots_min"], DEFAULT_PARAMS["n_dots_max"]))
+        n_dots = st.sidebar.selectbox("n_dots:", n_dots_sel, n_dots_sel.index(st.session_state.n_dots), key = "n_dots")
 
-        pxl_range_list = [i for i in range(5, 30, 5)]
-        initial_state_value("pxl_range", pxl_range_list[3])
-        pxl_range = st.selectbox("Pixel range:", pxl_range_list, pxl_range_list.index(st.session_state.pxl_range))
+        pxl_range_list = list(range(DEFAULT_PARAMS["pxl_range_min"], DEFAULT_PARAMS["pxl_range_max"],
+                                    DEFAULT_PARAMS["pxl_range_interval"]))
+        initial_state_value("pxl_range", DEFAULT_PARAMS["pxl_range"])
+        pxl_range = st.sidebar.selectbox("pxl_range:", pxl_range_list, pxl_range_list.index(st.session_state.pxl_range),
+                                         key = "pxl_range")
 
-        pxl_accuracy_list = [i for i in range(1, 9)]
-        initial_state_value("pxl_accuracy", pxl_accuracy_list[0])
-        pxl_accuracy = st.selectbox("Pixel accuracy:", pxl_accuracy_list, pxl_accuracy_list.index(st.session_state.pxl_accuracy))
+        pxl_accuracy_list = list(range(DEFAULT_PARAMS["pxl_accuracy_min"], DEFAULT_PARAMS["pxl_accuracy_max"]))
+        initial_state_value("pxl_accuracy", DEFAULT_PARAMS["pxl_accuracy"])
+        pxl_accuracy = st.sidebar.selectbox("pxl_accuracy:", pxl_accuracy_list,
+                                            pxl_accuracy_list.index(st.session_state.pxl_accuracy),
+                                            key = "pxl_accuracy")
 
+        if "final_df" not in st.session_state:
+            st.session_state["final_df"] = pd.DataFrame({})
     # --- Run analysis button ---
     if st.button("Run Automatic Analysis"):
         results_list = []
@@ -122,7 +137,7 @@ def page2():
             im_num = int(img_file[-14:-4])
             ref_num = im_num - delta_ref
             path_ref = os.path.join(dir, image_files[num_option.index(ref_num)])
-            crop = [600, 2610, 1370, 3520]  # full image; adjust if needed
+
 
             # Run analysis
             analysis_result = run_full_analysis(
@@ -134,7 +149,6 @@ def page2():
                 n_dots=n_dots,
                 r_guess=r_guess,
                 fit_bool=fit_bool,
-                use_img_bool=use_img_bool,
                 contour_bool=contour_bool,
                 fill_bool=fill_bool,
                 pxl_range=pxl_range,
@@ -142,22 +156,47 @@ def page2():
             )
 
             im_diff, edge, df, objects, contours, im_fit = analysis_result
-            print(df)
             if df is not None:
-                df["image_file"] = img_file
                 results_list.append(df)
 
             # Update progress bar
             my_bar.progress((i + 1) / len(selected_files), text=f"Processing {img_file}")
 
         # --- Combine results ---
+
         if results_list:
-            final_df = pd.concat(results_list, ignore_index=True)
+            final_df = pd.concat(results_list, ignore_index = True)
             st.success("Analysis completed!")
-            st.dataframe(final_df)
-            save_path = os.path.join(BASEDIR, f"automatic_analysis_{selected_date}.csv")
-            final_df.to_csv(save_path, index=False)
-            st.info(f"Results saved to: {save_path}")
+            st.session_state["final_df"] = final_df
         else:
             st.warning("No circles detected in selected images.")
+    st.dataframe(st.session_state["final_df"])
+    if st.button("Save Analysis"):
+        final_df = st.session_state["final_df"]
+        save_dir = os.path.join(BASEDIR, "analysis")
+        os.makedirs(save_dir, exist_ok = True)
+        save_path = os.path.join(save_dir, f"{selected_date}.csv")
+
+        # --- Merge with existing file if present ---
+        if os.path.exists(save_path):
+            existing_df = pd.read_csv(save_path)
+
+            # Drop duplicates on (image_file, dot_pos), keeping NEW results
+            merged_df = pd.concat([existing_df, final_df], ignore_index = True)
+            merged_df = merged_df.drop_duplicates(subset = ["image_file", "dot_pos"], keep = "last")
+        else:
+            merged_df = final_df
+
+        # --- Extract numeric part for sorting ---
+        merged_df["image_num"] = merged_df["image_file"].str.extract(r"(\d{10})(?=\.bmp)").astype(int)
+
+        # Sort by image_num, then dot_pos
+        merged_df = merged_df.sort_values(by = ["image_num", "dot_pos"]).reset_index(drop = True)
+
+        # Drop helper column before saving
+        merged_df = merged_df.drop(columns = ["image_num"])
+
+        # Save merged result
+        merged_df.to_csv(save_path, index = False)
+        st.info(f"Results saved to: {save_path}")
 page2()

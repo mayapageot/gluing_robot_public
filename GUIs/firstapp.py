@@ -362,6 +362,7 @@ def page1():
                     point_display_radius = 0,
                     key = "circle_draw"
                 )
+            print(canvas_result.json_data["objects"])
             objects = pd.DataFrame({"center_x":[],"center_y":[],"radius_guess":[],"dot_pos":[]})
             if canvas_result.json_data["objects"] is not None :
                 if len(canvas_result.json_data["objects"])>0:

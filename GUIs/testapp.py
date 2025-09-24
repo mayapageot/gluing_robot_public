@@ -1,42 +1,43 @@
-import pandas as pd
-from PIL import Image
+import numpy as np
 import streamlit as st
 from streamlit_drawable_canvas import st_canvas
+from PIL import Image
 
-# Specify canvas parameters in application
-drawing_mode = st.sidebar.selectbox(
-    "Drawing tool:", ("point", "freedraw", "line", "rect", "circle", "transform")
+# Create a black background image (200x200)
+bg_array = np.zeros((200, 200, 3), dtype=np.uint8)  # all black
+bg_image = Image.fromarray(bg_array)
+
+# Circle definition
+json_circle = {
+    "version": "4.4.0",
+    "objects": [
+        {
+            "type": "circle",
+            "left": 80,     # x-position
+            "top": 80,      # y-position
+            "radius": 40,   # circle radius
+            "stroke": "rgba(255,0,0,1)",       # red border
+            "fill": "rgba(255,0,0,0.3)",       # semi-transparent fill
+            "strokeWidth": 3
+        }
+    ]
+}
+
+st.write("Circle with black background below:")
+
+canvas = st_canvas(
+    fill_color="rgba(255, 0, 0, 0.3)",  # default fill if drawing new
+    stroke_width=3,
+    stroke_color="rgba(255, 0, 0, 1)",
+    background_color="#eee",
+    background_image=bg_image,          # <- black background image
+    update_streamlit=False,
+    width=200,
+    height=200,
+    drawing_mode="transform",
+    initial_drawing=json_circle,
+    point_display_radius=0,
+    key="circle_test"
 )
 
-stroke_width = st.sidebar.slider("Stroke width: ", 1, 25, 3)
-if drawing_mode == 'point':
-    point_display_radius = st.sidebar.slider("Point display radius: ", 1, 25, 3)
-stroke_color = st.sidebar.color_picker("Stroke color hex: ")
-bg_color = st.sidebar.color_picker("Background color hex: ", "#eee")
-bg_image = st.sidebar.file_uploader("Background image:", type = ["png", "jpg", "bmp"])
-
-realtime_update = st.sidebar.checkbox("Update in realtime", True)
-print(Image.open(bg_image))
-# Create a canvas component
-canvas_result = st_canvas(
-    fill_color = "rgba(255, 165, 0, 0.3)",  # Fixed fill color with some opacity
-    stroke_width = stroke_width,
-    stroke_color = stroke_color,
-    background_color = bg_color,
-    background_image = Image.open(bg_image) if bg_image else None,
-    update_streamlit = realtime_update,
-    height = 150,
-    width= 200,
-    drawing_mode = drawing_mode,
-    point_display_radius = point_display_radius if drawing_mode == 'point' else 0,
-    key = "canvas",
-)
-
-# Do something interesting with the image data and paths
-if canvas_result.image_data is not None:
-    st.image(canvas_result.image_data)
-if canvas_result.json_data is not None:
-    objects = pd.json_normalize(canvas_result.json_data["objects"])  # need to convert obj to str because PyArrow
-    for col in objects.select_dtypes(include = ['object']).columns:
-        objects[col] = objects[col].astype("str")
-    st.dataframe(objects)
+# st.json(canvas.json_data)
