@@ -5,25 +5,25 @@ from datetime import date
 from analysis.image_analysis import run_full_analysis
 from utils.session_utils import initial_state_value, save_session_state
 from config.settings import BASEDIR, DEFAULT_PARAMS
-
+import time
+def synch_selected_date():
+    st.session_state.selected_date2 = st.session_state.selected_date
 def page2():
     st.set_page_config(layout="centered")
     st.title("Automatic Analysis")
 
     # --- Select date ---
+    if "selected_date2" not in st.session_state:
+        st.session_state.selected_date2 = date.today()
     if "selected_date" not in st.session_state:
-        try:
-            st.session_state.selected_date = st.session_state.selected_date2
-        except:
-            st.session_state.selected_date = date.today()
-
-    # The widget controls the value
+        st.session_state.selected_date = st.session_state.selected_date2
     selected_date = st.date_input(
-        "Select a date",
-        st.session_state.selected_date,
-        key = "selected_date"
+        "Select a date",  # use backup for default
+        key = "selected_date",  # Sync on change
+        on_change = synch_selected_date
     )
-    st.session_state.selected_date2 = st.session_state.selected_date
+
+    # st.session_state.selected_date2 = st.session_state.selected_date
     list_dirs = [dir for dir in os.listdir(BASEDIR) if selected_date.strftime("%y%m%d") == dir[:6]]
 
     if len(list_dirs) == 0:
@@ -44,18 +44,31 @@ def page2():
     if "selected_numbers" not in st.session_state:
         st.session_state.selected_numbers = []
 
-    selected_numbers = []
-
     # Rolling window / scrollable container
     with st.expander("Select images (scrollable)"):
+
+        # --- Bulk select buttons ---
+        c1, c2, c3 = st.columns(3)
+        if c1.button("Select all odd"):
+            st.session_state.selected_numbers = [num for num in image_numbers if num % 2 == 1]
+        if c2.button("Select all even"):
+            st.session_state.selected_numbers = [num for num in image_numbers if num % 2 == 0]
+        if c3.button("Unselect all"):
+            st.session_state.selected_numbers = []
+
+        # --- Checkbox grid ---
         n_cols = 10
         cols = st.columns(n_cols)
+        selected_numbers = []
 
         for idx, (num, f) in enumerate(zip(image_numbers, image_files)):
             col = cols[idx % n_cols]
             checked = num in st.session_state.selected_numbers
             if col.checkbox(f"{num}", value = checked, key = f"chk_{num}"):
                 selected_numbers.append(num)
+
+        # Update session state with manual selections
+        st.session_state.selected_numbers = selected_numbers
 
     # Update session_state for persistence
     st.session_state.selected_numbers = selected_numbers

@@ -70,23 +70,21 @@ def rect_from_canvas(rect_crop, factor):
 
 def image_path(image_options,num_option,num):
     return image_options[num_option.index(num)]
-
-
+import time
+def synch_selected_date():
+    st.session_state.selected_date2 = st.session_state.selected_date
 def page1():
     st.set_page_config(layout="centered")
-    if "selected_date" not in st.session_state:
-        try:
-            st.session_state.selected_date = st.session_state.selected_date2
-        except:
-            st.session_state.selected_date = date.today()
 
-    # The widget controls the value
+    if "selected_date2" not in st.session_state:
+        st.session_state.selected_date2 = date.today()
+    if "selected_date" not in st.session_state:
+        st.session_state.selected_date = st.session_state.selected_date2
     selected_date = st.sidebar.date_input(
-        "Select a date",
-        st.session_state.selected_date,
-        key = "selected_date"
+        "Select a date",  # use backup for default
+        key = "selected_date",  # Sync on change
+        on_change = synch_selected_date
     )
-    st.session_state.selected_date2 = st.session_state.selected_date
     # --- Find directories for selected date ---
     list_dirs = [d for d in os.listdir(BASEDIR) if selected_date.strftime("%y%m%d") == d[:6]]
     if len(list_dirs) == 0:

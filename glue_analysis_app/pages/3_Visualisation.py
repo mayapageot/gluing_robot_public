@@ -9,24 +9,22 @@ from config.settings import BASEDIR
 
 def image_path(image_options,num_option,num):
     return image_options[num_option.index(num)]
+def synch_selected_date():
+    st.session_state.selected_date2 = st.session_state.selected_date
 def page3():
     st.set_page_config(layout="centered")
     st.title("Visualize Analysed Images by Date")
 
     # --- Select date ---
+    if "selected_date2" not in st.session_state:
+        st.session_state.selected_date2 = date.today()
     if "selected_date" not in st.session_state:
-        try:
-            st.session_state.selected_date = st.session_state.selected_date2
-        except:
-            st.session_state.selected_date = date.today()
-
-    # The widget controls the value
+        st.session_state.selected_date = st.session_state.selected_date2
     selected_date = st.date_input(
-        "Select a date",
-        st.session_state.selected_date,
-        key = "selected_date"
+        "Select a date",  # use backup for default
+        key = "selected_date",  # Sync on change
+        on_change = synch_selected_date
     )
-    st.session_state.selected_date2 = st.session_state.selected_date
     list_dirs = [dir for dir in os.listdir(BASEDIR) if selected_date.strftime("%y%m%d") == dir[:6]]
 
     if len(list_dirs) == 0:

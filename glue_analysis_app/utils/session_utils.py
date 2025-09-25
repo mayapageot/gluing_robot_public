@@ -12,16 +12,6 @@ import numpy as np
 def initial_state_value(key,default_val):
     if key not in st.session_state:
         st.session_state[key] = default_val
-def init_global_session_state():
-
-    initial_state_value("selected_date", date.today())
-    initial_state_value("high_threshold", 30)
-    initial_state_value("downsample_factor", 7)
-    initial_state_value("fit_bool", False)
-    initial_state_value("use_img_bool", False)
-    initial_state_value("contour_bool", False)
-    initial_state_value("fill_bool", False)
-    initial_state_value("r_guess", "500")
 
 def save_session_state(df):
 
