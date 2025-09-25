@@ -152,7 +152,7 @@ def page1():
     fill_bool = st.sidebar.checkbox('fill circle', value=st.session_state.fill_bool,key = "fill_bool")
 
     # Ensure r_guess exists as string
-    initial_state_value("fill_bool", str(DEFAULT_PARAMS["r_guess"]))
+    initial_state_value("r_guess", str(DEFAULT_PARAMS["r_guess"]))
 
     # If using image radius, show it in the widget but disable editing
     r_guess_default = st.session_state.r_guess
