@@ -3,7 +3,7 @@ import os
 import pandas as pd
 from datetime import date
 from analysis.image_analysis import run_full_analysis
-from utils.session_utils import initial_state_value
+from utils.session_utils import initial_state_value, save_session_state
 from config.settings import BASEDIR, DEFAULT_PARAMS
 
 def page2():
@@ -173,10 +173,22 @@ def page2():
     st.dataframe(st.session_state["final_df"])
     if st.button("Save Analysis"):
         final_df = st.session_state["final_df"]
+        dic_stat = st.session_state.to_dict()
+        cols_to_save = [
+            "selected_date", "selected_num", "downsample_factor", "pxl_range", "n_dots",
+            "selected_num_ref", "fit_bool", "fill_bool", "use_img_bool", "high_threshold",
+            "pxl_accuracy", "r_guess", "contour_bool", "crop"
+        ]
+        # make sure only those columns are included
+        df_info = pd.DataFrame([{col: dic_stat.get(col) for col in cols_to_save}])
+
+        for i in st.session_state.selected_numbers:
+            df_info["selected_num"] = i
+            df_info["selected_num_ref"] = i-delta_ref
+            save_session_state(df_info)
         save_dir = os.path.join(BASEDIR, "analysis")
         os.makedirs(save_dir, exist_ok = True)
         save_path = os.path.join(save_dir, f"{selected_date}.csv")
-
         # --- Merge with existing file if present ---
         if os.path.exists(save_path):
             existing_df = pd.read_csv(save_path)

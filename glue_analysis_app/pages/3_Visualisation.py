@@ -5,9 +5,8 @@ from PIL import Image, ImageDraw
 from datetime import date
 from utils import image_utils
 import numpy as np
+from config.settings import BASEDIR
 
-BASEDIR = "/media/mp274748/Transcend/data/Glue_Files/"
-CROP = [600, 2610, 1370, 3520]
 def image_path(image_options,num_option,num):
     return image_options[num_option.index(num)]
 def page3():
@@ -43,8 +42,9 @@ def page3():
     image_options = [img for _, img in sorted(zip(num_option, image_options))]
     num_option = sorted(num_option)
     # --- Find analysis CSV for that date ---
-    csv_filename = f"automatic_analysis_{date_str}.csv"
-    csv_path = os.path.join(BASEDIR, csv_filename)
+    csv_filename = f"{date_str}.csv"
+    save_dir = os.path.join(BASEDIR, "analysis")
+    csv_path = os.path.join(save_dir, csv_filename)
 
     if not os.path.exists(csv_path):
         st.warning(f"No analysis CSV found for {date_str}.")

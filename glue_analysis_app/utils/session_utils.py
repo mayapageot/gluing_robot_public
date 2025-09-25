@@ -1,11 +1,11 @@
 """
 Session state management utilities for glue analysis app.
 """
-import os
-import pandas as pd
 import streamlit as st
 from datetime import date
 from config.settings import BASEDIR
+import os
+import pandas as pd
 import time
 import json
 import numpy as np
@@ -23,11 +23,12 @@ def init_global_session_state():
     initial_state_value("fill_bool", False)
     initial_state_value("r_guess", "500")
 
-def save_session_state(df, filename="session_state.csv"):
-    import os
-    import pandas as pd
+def save_session_state(df):
 
-    filename = os.path.join(BASEDIR, filename)
+    save_dir = os.path.join(BASEDIR, "analysis")
+    os.makedirs(save_dir, exist_ok = True)
+    selected_date = df["selected_date"].values[0]
+    filename = os.path.join(save_dir, f"{selected_date}_session_state.csv")
 
     # --- Relevant dtypes and columns ---
     dtypes = {
@@ -53,7 +54,6 @@ def save_session_state(df, filename="session_state.csv"):
 
     # --- Set multi-index for merging/updating ---
     df_to_save.set_index(["selected_date", "selected_num"], inplace=True)
-
     if os.path.exists(filename):
         # --- Load existing ---
         existing_df = pd.read_csv(filename).set_index(["selected_date", "selected_num"])
@@ -70,12 +70,13 @@ def save_session_state(df, filename="session_state.csv"):
         df_to_save.to_csv(filename)
         st.write("Session state saved.")
 
-def load_session_state(filename = "session_state.csv"):
+def load_session_state():
     if "selected_num" not in st.session_state:
         return None
-
+    save_dir = os.path.join(BASEDIR, "analysis")
+    os.makedirs(save_dir, exist_ok = True)
     selected_date, selected_num = st.session_state.selected_date, st.session_state.selected_num
-    filename = os.path.join(BASEDIR, filename)
+    filename = os.path.join(save_dir, f"{selected_date}_session_state.csv")
 
     if os.path.exists(filename):
         dtypes = {
