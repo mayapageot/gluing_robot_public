@@ -4,17 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c49c73ac-91ab-4056-bcf3-7772d79f1b6b" name="Changes" comment="create a dedicated package for the GUI app + add Automatic and visualisation">
+    <list default="true" id="c49c73ac-91ab-4056-bcf3-7772d79f1b6b" name="Changes" comment="consistant saving of the files and analysis parameters (session state)">
+      <change afterPath="$PROJECT_DIR$/glue_analysis_app/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/glue_analysis_app/config/settings.exemple.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/GUIs/firstapp.py" beforeDir="false" afterPath="$PROJECT_DIR$/GUIs/firstapp.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/GUIs/testapp.py" beforeDir="false" afterPath="$PROJECT_DIR$/GUIs/testapp.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/glue_analysis_app/analysis/image_analysis.py" beforeDir="false" afterPath="$PROJECT_DIR$/glue_analysis_app/analysis/image_analysis.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/glue_analysis_app/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/glue_analysis_app/app.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/glue_analysis_app/config/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/glue_analysis_app/config/settings.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/glue_analysis_app/pages/1_Visual_Analysis.py" beforeDir="false" afterPath="$PROJECT_DIR$/glue_analysis_app/pages/1_Visual_Analysis.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/glue_analysis_app/pages/2_Automatic_Analysis.py" beforeDir="false" afterPath="$PROJECT_DIR$/glue_analysis_app/pages/2_Automatic_Analysis.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/glue_analysis_app/pages/3_Visualize_Analysis.py" beforeDir="false" afterPath="$PROJECT_DIR$/glue_analysis_app/pages/3_Visualisation.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/glue_analysis_app/utils/session_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/glue_analysis_app/utils/session_utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/glue_analysis_app/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/glue_analysis_app/requirements.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -64,16 +59,19 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "WebServerToolWindowFactoryState": "false",
     "git-widget-placeholder": "master",
-    "last_opened_file_path": "/local/home/mp274748/Documents/manim/my-project",
+    "last_opened_file_path": "/local/home/mp274748/gluing_robot/glue_analysis_app/config",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
-    "settings.editor.selected.configurable": "preferences.pluginManager",
+    "settings.editor.selected.configurable": "org.jetbrains.plugins.github.ui.GithubSettingsConfigurable",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
   <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/glue_analysis_app/config" />
+    </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/image_analysis" />
     </key>
@@ -92,7 +90,7 @@
       <workItem from="1741113864353" duration="19948000" />
       <workItem from="1741601397726" duration="19086000" />
       <workItem from="1742221225992" duration="1595000" />
-      <workItem from="1758616374696" duration="43595000" />
+      <workItem from="1758616374696" duration="49326000" />
     </task>
     <task id="LOCAL-00001" summary="create a dedicated package for the GUI app + add Automatic and visualisation">
       <option name="closed" value="true" />
@@ -102,7 +100,31 @@
       <option name="project" value="LOCAL" />
       <updated>1758641744833</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="Fix issues and prepare for deployment">
+      <option name="closed" value="true" />
+      <created>1758727431371</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1758727431371</updated>
+    </task>
+    <task id="LOCAL-00003" summary="init r_guess">
+      <option name="closed" value="true" />
+      <created>1758784547217</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1758784547217</updated>
+    </task>
+    <task id="LOCAL-00004" summary="consistant saving of the files and analysis parameters (session state)">
+      <option name="closed" value="true" />
+      <created>1758787889114</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1758787889114</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -110,7 +132,10 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="create a dedicated package for the GUI app + add Automatic and visualisation" />
-    <option name="LAST_COMMIT_MESSAGE" value="create a dedicated package for the GUI app + add Automatic and visualisation" />
+    <MESSAGE value="Fix issues and prepare for deployment" />
+    <MESSAGE value="init r_guess" />
+    <MESSAGE value="consistant saving of the files and analysis parameters (session state)" />
+    <option name="LAST_COMMIT_MESSAGE" value="consistant saving of the files and analysis parameters (session state)" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/gluing_robot$test2.coverage" NAME="test2 Coverage Results" MODIFIED="1741197006534" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/test_programs" />
