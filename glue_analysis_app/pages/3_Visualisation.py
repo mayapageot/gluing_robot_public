@@ -64,6 +64,13 @@ def page3():
 
     # Rolling window / scrollable container
     with st.expander("Select images (scrollable)"):
+        col_all, col_none = st.columns(2)
+        with col_all:
+            if st.button("Select All"):
+                st.session_state.selected_numbers = image_numbers.copy()
+        with col_none:
+            if st.button("Unselect All"):
+                st.session_state.selected_numbers = []
         n_cols_chk = 10
         cols_chk = st.columns(n_cols_chk)
         for idx, (num, f) in enumerate(zip(image_numbers, images)):
@@ -89,7 +96,7 @@ def page3():
         for j, img_file in enumerate(selected_images[i:i+n_cols_disp]):
             img_path = os.path.join(dir, img_file)
             img_df = df[df["image_file"] == img_file]
-            crop = [df["crop_top"].values[0] ,df["crop_bottom"].values[0] , df["crop_left"].values[0] ,df["crop_right"].values[0] ]
+            crop = [img_df["crop_top"].values[0] ,img_df["crop_bottom"].values[0] , img_df["crop_left"].values[0] ,img_df["crop_right"].values[0] ]
             if not os.path.exists(img_path):
                 st.warning(f"Image {img_file} not found!")
                 continue
@@ -113,6 +120,6 @@ def page3():
 
             with cols[j]:
                 st.image(img, caption=f"{img_file[-14:-4]}", use_container_width=True)
-                st.dataframe(img_df[["x", "y", "radius","accum"]].reset_index(drop=True), hide_index=True)
+                st.dataframe(img_df[["radius","accum"]].reset_index(drop=True), hide_index=True)
 
 page3()

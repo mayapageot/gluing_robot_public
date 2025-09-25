@@ -187,7 +187,7 @@ def page1():
     # --- Main UI layout ---
     left, right = st.columns(2, vertical_alignment="center")
     with right:
-        st.image(path_ref, caption = "im Diff", width = 300)
+        st.image(path_ref, caption = "img Ref", width = 300)
     with left:
         # Ensure crop exists
         if "crop" not in st.session_state:
@@ -227,35 +227,21 @@ def page1():
         crop = [int(x.strip()) for x in st.session_state.crop.split(",")]
     # --- Run analysis if we have crop ---
     if crop is not None:
-        results = run_full_analysis(
-            path_glue=path_glue,
-            path_ref=path_ref,
-            crop=crop,
-            high_threshold=high_threshold,
-            downsample_factor=downsample_factor,
-            n_dots=n_dots,
-            r_guess=r_guess,
-            fit_bool=fit_bool,
-            contour_bool=contour_bool,
-            fill_bool=fill_bool,
-            pxl_range=pxl_range,
-            pxl_accuracy=pxl_accuracy
-        )
-
-        im_diff, edge, df, objects, contours, im_fit = results
+        im_diff = image_utils.get_im_diff(path_glue, path_ref, crop)
         edge = image_utils.get_edges(im_diff, high_threshold, downsample_factor)
         if contour_bool:
             edge, contours = image_utils.merge_circle(edge, n_dots, r_guess // downsample_factor, fill_bool)
         factor = 200 / edge.shape[1]
-        left,_, middle,mid_bis, right = st.columns([5,1,5,1,5], vertical_alignment = "center")
+        left, middle, right = st.columns([1, 1, 1], vertical_alignment = "center")
+
         with left:
-            st.image(im_diff, width = 200)
+            st.image(im_diff, width = 200, caption = "Diff")
 
         with middle:
             circle_draw = st_canvas(
-                fill_color = "rgba(255,0,0,0.2)",  # only used for new shapes
+                fill_color = "rgba(255,0,0,0.2)",  # for new shapes
                 stroke_width = 3,
-                stroke_color = "rgba(255,0,0,1)",  # only used for new shapes
+                stroke_color = "rgba(255,0,0,1)",
                 background_color = "#eee",
                 background_image = Image.fromarray((edge * 255).astype(np.uint8)),
                 update_streamlit = True,
@@ -267,8 +253,22 @@ def page1():
                 key = "circle_draw"
             )
         # --- Process user circles ---
-        objects = pd.DataFrame({"center_x": [], "center_y": [], "radius_guess": []})
+        results = run_full_analysis(
+            path_glue = path_glue,
+            path_ref = path_ref,
+            crop = crop,
+            high_threshold = high_threshold,
+            downsample_factor = downsample_factor,
+            n_dots = n_dots,
+            r_guess = r_guess,
+            fit_bool = fit_bool,
+            contour_bool = contour_bool,
+            fill_bool = fill_bool,
+            pxl_range = pxl_range,
+            pxl_accuracy = pxl_accuracy
+        )
 
+        im_diff, edge, df, objects, contours, im_fit = results
         if circle_draw.json_data is not None:
             objs = circle_draw.json_data.get("objects", [])
             if objs:

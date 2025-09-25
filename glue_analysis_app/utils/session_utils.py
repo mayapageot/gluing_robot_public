@@ -84,13 +84,6 @@ def load_session_state():
             if isinstance(row, pd.DataFrame):
                 row = row.iloc[0]
             for key, value in row.items():
-                # if key == "crop":
-                #     try:
-                #         st.session_state["crop"] = json.loads(value) if isinstance(value, str) else value
-                #     except Exception:
-                #         st.session_state["crop"] = [600, 2610, 1370, 3520]  # fallback default
-                #
-                # else:
                 st.session_state[key] = value.item() if isinstance(value, np.generic) else value
         except KeyError:
             print(f"No entry for ({selected_date}, {selected_num}) in {filename}")

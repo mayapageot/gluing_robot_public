@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 import pandas as pd
 from utils import image_utils
+import streamlit as st
 import os
 
 def get_dot_pos(df):
@@ -121,7 +122,7 @@ def analyze_image(
         "objects": objects
     }
 
-
+@st.cache_data
 def run_full_analysis(
     path_glue,
     path_ref,

@@ -9,6 +9,7 @@ from skimage.morphology import dilation, disk
 from skimage.measure import block_reduce, find_contours
 from skimage.transform import hough_circle, hough_circle_peaks, hough_ellipse
 from joblib import Parallel, delayed
+import streamlit as st
 
 def get_radius(x,y):
     return (x.max()-x.min()+y.max()-y.min())/2
@@ -21,6 +22,7 @@ def orientation_of_consecutive_vectors(x, y):
     # Determine orientation based on the sign of the cross product
     orientation = cross_products > 0
     return orientation
+@st.cache_data
 def get_im_diff(path: str, path_ref: str, crop=None) -> np.ndarray:
     """
     Compute normalized absolute difference between an image and its reference.
@@ -47,7 +49,7 @@ def get_im_diff(path: str, path_ref: str, crop=None) -> np.ndarray:
     im_diff = np.abs(im_ref - im)
     return cv2.normalize(im_diff, None, 0, 255, cv2.NORM_MINMAX)
 
-
+@st.cache_data
 def get_edges(image: np.ndarray, high_threshold: float, downsample_factor: int = 10) -> np.ndarray:
     """
     Compute Canny edges and downsample.
