@@ -9,6 +9,7 @@ from utils import image_utils
 import streamlit as st
 import os
 
+
 def get_dot_pos(df):
     if len(df)==1:
         df["dot_pos"]="middle"
@@ -23,6 +24,7 @@ def get_dot_pos(df):
         df.sort_values("dot_pos")
     return df
 
+
 def analyze_image(
     path_glue: str,
     path_ref: str,
@@ -36,8 +38,7 @@ def analyze_image(
     n_dots: int,
     pxl_range: int,
     pxl_accuracy: int,
-    objects_df: pd.DataFrame | None = None
-) :
+) -> dict:
     """
     Perform full analysis on a glue image.
 
@@ -54,8 +55,6 @@ def analyze_image(
         n_dots: Number of circles.
         pxl_range: Pixel search range.
         pxl_accuracy: Pixel step size.
-        objects_df: Optional DataFrame of manual guesses (from UI).
-
     Returns:
         im_result: Image with circles drawn.
         df_results: DataFrame with detected features.
