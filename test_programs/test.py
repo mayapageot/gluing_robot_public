@@ -2,14 +2,11 @@ import pandas as pd
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-
-file_path = "/media/mp274748/Transcend/data/Glue_Files/250506_101037/CAM1/250506_104502_0000000014.bmp"
-
-
-# Load the saved image and display it
-img = plt.imread(file_path)
+import glob
+import PIL
+path = "/Users/av285030/Documents/CEA/Manuel_gluing_app/data/Pictures/analysis/2025-02-04.csv"
+df = pd.read_csv(path)
+df["path"] = df["image_file"].apply(lambda x: glob.glob(path[:-23]+"**/"+x,recursive=True)[0])
+img = np.asarray(PIL.Image.open(df.loc[0,"path"]))
 plt.imshow(img)
-plt.scatter(1370,800)
-plt.axis('off')  # hide axes
-plt.title('Loaded Image')
 plt.show()

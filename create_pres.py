@@ -43,8 +43,10 @@ subtitle.text = "06/05/2025"
 # path = "/media/mp274748/Transcend/data/Glue_Files/250204_112143/CAM1/data.csv"
 # df3 = pd.read_csv(path)
 # df = pd.concat((df1,df2,df3))
-path = "/media/mp274748/Transcend/data/Glue_Files/250506_101037/CAM1/data.csv"
+path = "/Users/av285030/Documents/CEA/data/Pictures/analysis/2025-05-06.csv"
 df = pd.read_csv(path)
+df["file"] = df["image_file"].apply(lambda x: glob.glob(path[:-23]+"**/"+x,recursive=True)[0])
+
 
 df = df.set_index("file")
 
@@ -101,6 +103,6 @@ for Chip_name in df["Chip_name"].unique():
 
 # Save the presentation
 # prs.save('/media/mp274748/Transcend/data/Glue_Files/Ulysse_test_02-2025.pptx')
-prs.save('/media/mp274748/Transcend/data/Glue_Files/250506_101037/VSTT_gluing_06_05_2025.pptx')
+prs.save('/Users/av285030/Documents/CEA/Manuel_gluing_app/data/Pictures/analysis/2025-02-04.pptx')
 print("Presentation created successfully!")
 

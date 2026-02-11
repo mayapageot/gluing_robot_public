@@ -1,7 +1,7 @@
 """
 Configuration settings for glue analysis app.
 """
-BASEDIR = "/media/mp274748/Transcend/data/Glue_Files/"
+BASEDIR = "/Users/av285030/Documents/CEA/data/Pictures"
 DEFAULT_PARAMS = {
     "high_threshold": 30,
     "downsample_factor": 7,

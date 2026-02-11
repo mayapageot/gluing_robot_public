@@ -5,12 +5,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="c49c73ac-91ab-4056-bcf3-7772d79f1b6b" name="Changes" comment="Refactor date selection handling in analysis pages; improve session state management">
+      <change afterPath="$PROJECT_DIR$/create_pres2.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/gluing_robot.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/gluing_robot.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/glue_analysis_app/analysis/image_analysis.py" beforeDir="false" afterPath="$PROJECT_DIR$/glue_analysis_app/analysis/image_analysis.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/glue_analysis_app/pages/1_Visual_Analysis.py" beforeDir="false" afterPath="$PROJECT_DIR$/glue_analysis_app/pages/1_Visual_Analysis.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/glue_analysis_app/pages/3_Visualisation.py" beforeDir="false" afterPath="$PROJECT_DIR$/glue_analysis_app/pages/3_Visualisation.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/glue_analysis_app/utils/image_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/glue_analysis_app/utils/image_utils.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/glue_analysis_app/utils/session_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/glue_analysis_app/utils/session_utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/create_pres.py" beforeDir="false" afterPath="$PROJECT_DIR$/create_pres.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/glue_analysis_app/config/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/glue_analysis_app/config/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test_programs/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/test_programs/test.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -25,24 +26,31 @@
     </option>
   </component>
   <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="Ambre" />
+      </map>
+    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "math-08"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;math-08&quot;
   }
-}]]></component>
-  <component name="GithubPullRequestsUISettings">
-    <option name="selectedUrlAndAccountId">
-      <UrlAndAccount>
-        <option name="accountId" value="d0364b40-d656-418b-a102-471969b6fa36" />
-        <option name="url" value="git@github.mit.edu:/math-08/gluing_robot.git" />
-      </UrlAndAccount>
-    </option>
-  </component>
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/mathieupageot/gluing_robot_public.git&quot;,
+    &quot;accountId&quot;: &quot;1f331efc-d10c-4467-93f6-6c2d3d25d86f&quot;
+  }
+}</component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
+  </component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
   </component>
   <component name="ProjectColorInfo">{
   &quot;customColor&quot;: &quot;&quot;,
@@ -54,21 +62,37 @@
     <option name="showLibraryContents" value="true" />
     <option name="showMembers" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "WebServerToolWindowFactoryState": "false",
-    "git-widget-placeholder": "master",
-    "last_opened_file_path": "/local/home/mp274748/gluing_robot/glue_analysis_app/config",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "settings.editor.selected.configurable": "org.jetbrains.plugins.github.ui.GithubSettingsConfigurable",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Python.1_Visual_Analysis.executor&quot;: &quot;Run&quot;,
+    &quot;Python.3_Visualisation.executor&quot;: &quot;Run&quot;,
+    &quot;Python.create_pres.executor&quot;: &quot;Run&quot;,
+    &quot;Python.create_pres2.executor&quot;: &quot;Debug&quot;,
+    &quot;Python.image_analysis.executor&quot;: &quot;Run&quot;,
+    &quot;Python.settings.executor&quot;: &quot;Run&quot;,
+    &quot;Python.test.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;ai.playground.ignore.import.keys.banner.in.settings&quot;: &quot;true&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/local/home/mp274748/gluing_robot/glue_analysis_app/config&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;reference.settingsdialog.project.grazie&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/glue_analysis_app/config" />
@@ -76,6 +100,45 @@
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/image_analysis" />
     </key>
+  </component>
+  <component name="RunManager">
+    <configuration name="create_pres2" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="gluing_robot" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="RUN_TOOL" value="" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/create_pres2.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.create_pres2" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-9b0f141eb926-JavaScript-PY-253.29346.308" />
+        <option value="bundled-python-sdk-ca5e2b39c7df-6e1f45a539f7-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-253.29346.308" />
+      </set>
+    </attachedChunks>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
@@ -92,6 +155,10 @@
       <workItem from="1741601397726" duration="19086000" />
       <workItem from="1742221225992" duration="1595000" />
       <workItem from="1758616374696" duration="55143000" />
+      <workItem from="1769524610613" duration="3243000" />
+      <workItem from="1770018739128" duration="5899000" />
+      <workItem from="1770191142127" duration="26321000" />
+      <workItem from="1770624465997" duration="14812000" />
     </task>
     <task id="LOCAL-00001" summary="create a dedicated package for the GUI app + add Automatic and visualisation">
       <option name="closed" value="true" />
@@ -164,17 +231,25 @@
     <MESSAGE value="init r_guess" />
     <MESSAGE value="consistant saving of the files and analysis parameters (session state)" />
     <MESSAGE value="Add .gitignore and example settings file; update requirements" />
+    <MESSAGE value="Refactor app initialization; remove global session state initialization and clean up imports" />
     <MESSAGE value="Refactor date selection handling in analysis pages; improve session state management" />
     <option name="LAST_COMMIT_MESSAGE" value="Refactor date selection handling in analysis pages; improve session state management" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/gluing_robot$test2.coverage" NAME="test2 Coverage Results" MODIFIED="1741197006534" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/test_programs" />
     <SUITE FILE_PATH="coverage/gluing_robot$distrib_glue_dots.coverage" NAME="distrib_glue_dots Coverage Results" MODIFIED="1742221888616" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/plots" />
-    <SUITE FILE_PATH="coverage/gluing_robot$main.coverage" NAME="main Coverage Results" MODIFIED="1740764100402" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/gluing_robot$glue_evolution.coverage" NAME="glue_evolution Coverage Results" MODIFIED="1741110588945" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/plots" />
-    <SUITE FILE_PATH="coverage/gluing_robot$BDPT_repro.coverage" NAME="BDPT_repro Coverage Results" MODIFIED="1758616401832" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/gluing_test" />
-    <SUITE FILE_PATH="coverage/gluing_robot$test.coverage" NAME="test Coverage Results" MODIFIED="1741188973587" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/test_programs" />
+    <SUITE FILE_PATH="coverage/gluing_robot$test2.coverage" NAME="test2 Coverage Results" MODIFIED="1741197006534" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/test_programs" />
+    <SUITE FILE_PATH="coverage/gluing_robot_public$3_Visualisation.coverage" NAME="3_Visualisation Coverage Results" MODIFIED="1770381508572" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/glue_analysis_app/pages" />
+    <SUITE FILE_PATH="coverage/gluing_robot_public$image_analysis.coverage" NAME="image_analysis Coverage Results" MODIFIED="1770385191616" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/glue_analysis_app/analysis" />
+    <SUITE FILE_PATH="coverage/gluing_robot_public$test.coverage" NAME="test Coverage Results" MODIFIED="1770375126439" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/test_programs" />
     <SUITE FILE_PATH="coverage/gluing_robot$firstapp.coverage" NAME="firstapp Coverage Results" MODIFIED="1741190240573" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/GUIs" />
+    <SUITE FILE_PATH="coverage/gluing_robot$glue_evolution.coverage" NAME="glue_evolution Coverage Results" MODIFIED="1741110588945" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/plots" />
+    <SUITE FILE_PATH="coverage/gluing_robot_public$create_pres.coverage" NAME="create_pres Coverage Results" MODIFIED="1770626464958" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/gluing_robot$main.coverage" NAME="main Coverage Results" MODIFIED="1740764100402" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/gluing_robot_public$1_Visual_Analysis.coverage" NAME="1_Visual_Analysis Coverage Results" MODIFIED="1770385204052" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/glue_analysis_app/pages" />
+    <SUITE FILE_PATH="coverage/gluing_robot$test.coverage" NAME="test Coverage Results" MODIFIED="1741188973587" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/test_programs" />
+    <SUITE FILE_PATH="coverage/gluing_robot$BDPT_repro.coverage" NAME="BDPT_repro Coverage Results" MODIFIED="1758616401832" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/gluing_test" />
+    <SUITE FILE_PATH="coverage/gluing_robot_public$settings.coverage" NAME="settings Coverage Results" MODIFIED="1770625653761" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/glue_analysis_app/config" />
     <SUITE FILE_PATH="coverage/gluing_robot$1_Visual_Analysis.coverage" NAME="1_Visual_Analysis Coverage Results" MODIFIED="1758631572458" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/glue_analysis_app/pages" />
+    <SUITE FILE_PATH="coverage/gluing_robot_public$create_pres2.coverage" NAME="create_pres2 Coverage Results" MODIFIED="1770650456984" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>
